@@ -1,0 +1,32 @@
+# A calc scratchpad is a script you can read top to bottom.
+
+# The four operators, and grouping
+1 + 2
+7 - 2 * 3
+(1 + 2) * 3
+
+# Powers are right associative, so this is 2^9
+2 ^ 3 ^ 2
+
+# A negative exponent needs no parentheses
+2 ^ -1
+
+# Unary minus binds looser than the power, as in mathematics: -(2^2)
+-2 ^ 2
+
+# Functions
+sqrt(16)
+pow(2, 10)
+sqrt(pow(3, 2))
+
+# The example from the brief
+sqrt(16) + pow(2, 10)
+
+# Split a bill three ways
+128.40 / 3
+
+# These lines show no result. Put the cursor on one to read why.
+1 +
+1 / 0
+sqrt(-1)
+
