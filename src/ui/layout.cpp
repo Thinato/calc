@@ -19,13 +19,19 @@ constexpr std::size_t kScrollOff = 3;
 // "1 + 2 = 3".
 constexpr std::string_view kResultSeparator = " = ";
 
-enum class CellStyle { Plain, Selected, Cursor };
+// Ordered by precedence: a cursor or a selection wins over a name highlight,
+// because knowing where you are matters more than what a name is.
+enum class CellStyle { Plain, Variable, Constant, Selected, Cursor };
 
 Element style_run(const std::string& run, CellStyle style, Mode mode) {
   Element element = text(run);
   switch (style) {
     case CellStyle::Plain:
       return element;
+    case CellStyle::Variable:
+      return element | color(theme::variable());
+    case CellStyle::Constant:
+      return element | color(theme::constant()) | bold;
     case CellStyle::Selected:
       return element | inverted;
     case CellStyle::Cursor:
@@ -38,19 +44,32 @@ Element style_run(const std::string& run, CellStyle style, Mode mode) {
   return element;
 }
 
+// Everything that decides how one line's characters are drawn. A struct rather
+// than a parameter list because the three overlapping concerns — cursor,
+// selection, name highlight — would otherwise be seven positional arguments.
+struct LineStyling {
+  Mode mode = Mode::Normal;
+  bool draw_cursor = false;
+  std::size_t cursor_column = 0;
+  bool selected_row = false;
+  std::size_t selection_begin = 0;
+  std::size_t selection_end = 0;
+  // The name an assignment defines, so definitions stand out from uses.
+  std::size_t name_begin = 0;
+  std::size_t name_end = 0;
+  bool name_is_constant = false;
+};
+
 // Splits a line into runs of equal styling. Grouping keeps the element count
 // near the number of distinct styles rather than the number of characters.
-Elements styled_line(const std::string& text_line, bool draw_cursor,
-                     std::size_t cursor_column, bool selected_row,
-                     std::size_t selection_begin, std::size_t selection_end,
-                     Mode mode) {
+Elements styled_line(const std::string& text_line, const LineStyling& styling) {
   Elements spans;
   std::string run;
   CellStyle run_style = CellStyle::Plain;
 
   const auto flush = [&] {
     if (run.empty()) return;
-    spans.push_back(style_run(run, run_style, mode));
+    spans.push_back(style_run(run, run_style, styling.mode));
     run.clear();
   };
 
@@ -59,10 +78,16 @@ Elements styled_line(const std::string& text_line, bool draw_cursor,
     const std::size_t next = utf8::next_boundary(text_line, index);
 
     CellStyle style = CellStyle::Plain;
-    if (selected_row && index >= selection_begin && index < selection_end) {
+    if (index >= styling.name_begin && index < styling.name_end) {
+      style = styling.name_is_constant ? CellStyle::Constant : CellStyle::Variable;
+    }
+    if (styling.selected_row && index >= styling.selection_begin &&
+        index < styling.selection_end) {
       style = CellStyle::Selected;
     }
-    if (draw_cursor && index == cursor_column) style = CellStyle::Cursor;
+    if (styling.draw_cursor && index == styling.cursor_column) {
+      style = CellStyle::Cursor;
+    }
 
     if (style != run_style) {
       flush();
@@ -75,8 +100,8 @@ Elements styled_line(const std::string& text_line, bool draw_cursor,
 
   // An empty line, or insert mode sitting one past the last character, still
   // needs somewhere to draw the cursor.
-  if (draw_cursor && cursor_column >= text_line.size()) {
-    spans.push_back(style_run(" ", CellStyle::Cursor, mode));
+  if (styling.draw_cursor && styling.cursor_column >= text_line.size()) {
+    spans.push_back(style_run(" ", CellStyle::Cursor, styling.mode));
   }
   return spans;
 }
@@ -234,34 +259,42 @@ ftxui::Element render_frame(const Document& document, const ResultCache& results
                       color(row == cursor.row ? theme::gutter_current() : theme::gutter()));
     }
 
-    std::size_t selection_begin = 0;
-    std::size_t selection_end = 0;
-    bool selected_row = false;
+    const LineEval& eval = results.at(row);
+
+    LineStyling styling;
+    styling.mode = engine.mode();
+    styling.draw_cursor = cursor_in_buffer && row == cursor.row;
+    styling.cursor_column = cursor.column;
+
     if (selection && row >= selection->first.row && row <= selection->second.row) {
-      selected_row = true;
+      styling.selected_row = true;
       if (linewise_selection) {
-        selection_end = document.line_length(row);
+        styling.selection_end = document.line_length(row);
       } else {
-        selection_begin = row == selection->first.row ? selection->first.column : 0;
+        styling.selection_begin =
+            row == selection->first.row ? selection->first.column : 0;
         const std::size_t last = row == selection->second.row
                                      ? selection->second.column
                                      : document.line_length(row);
-        selection_end = row == selection->second.row
-                            ? utf8::next_boundary(document.line(row), last)
-                            : last;
+        styling.selection_end = row == selection->second.row
+                                    ? utf8::next_boundary(document.line(row), last)
+                                    : last;
       }
     }
 
-    Elements line_spans =
-        styled_line(document.line(row), cursor_in_buffer && row == cursor.row,
-                    cursor.column, selected_row, selection_begin, selection_end,
-                    engine.mode());
+    if (eval.is_assignment()) {
+      styling.name_begin = eval.assigned_column;
+      styling.name_end = eval.assigned_column + eval.assigned_name->size();
+      styling.name_is_constant = eval.assigned_constant;
+    }
+
+    Elements line_spans = styled_line(document.line(row), styling);
     spans.insert(spans.end(), line_spans.begin(), line_spans.end());
 
     // The result. It is drawn here and stored nowhere, which is exactly why it
-    // cannot be edited.
-    const LineEval& eval = results.at(row);
-    if (eval.has_result()) {
+    // cannot be edited. A definition whose value was typed out literally shows
+    // nothing, so `x = 128.40` is never restated as `= 128.4`.
+    if (eval.has_result() && eval.show_result) {
       spans.push_back(text(std::string(kResultSeparator)) |
                       color(theme::separator_dim()));
       spans.push_back(text(eval.text) | color(theme::result()) | bold);

@@ -20,10 +20,10 @@ Result<Value> checked(Value value, std::size_t column) {
   return value;
 }
 
-Result<Value> evaluate_binary(const Binary& node) {
-  Result<Value> lhs = evaluate(*node.lhs);
+Result<Value> evaluate_binary(const Binary& node, const Environment& environment) {
+  Result<Value> lhs = evaluate(*node.lhs, environment);
   if (!lhs) return lhs.error();
-  Result<Value> rhs = evaluate(*node.rhs);
+  Result<Value> rhs = evaluate(*node.rhs, environment);
   if (!rhs) return rhs.error();
 
   const Value a = lhs.value();
@@ -50,7 +50,7 @@ Result<Value> evaluate_binary(const Binary& node) {
   return make_error(ErrorCode::UnexpectedToken, "unsupported operator", node.column);
 }
 
-Result<Value> evaluate_call(const Call& node) {
+Result<Value> evaluate_call(const Call& node, const Environment& environment) {
   const FunctionDef* definition = find_function(node.name);
   if (definition == nullptr) {
     return make_error(ErrorCode::UnknownFunction,
@@ -60,7 +60,7 @@ Result<Value> evaluate_call(const Call& node) {
   std::vector<Value> args;
   args.reserve(node.args.size());
   for (const NodePtr& argument : node.args) {
-    Result<Value> value = evaluate(*argument);
+    Result<Value> value = evaluate(*argument, environment);
     if (!value) return value.error();
     args.push_back(value.value());
   }
@@ -72,19 +72,30 @@ Result<Value> evaluate_call(const Call& node) {
 
 }  // namespace
 
-Result<Value> evaluate(const Node& node) {
+Result<Value> evaluate(const Node& node, const Environment& environment) {
   if (const auto* number = std::get_if<Number>(&node.kind)) {
     return number->value;
   }
+  if (const auto* identifier = std::get_if<Identifier>(&node.kind)) {
+    const Binding* binding = environment.find(identifier->name);
+    if (binding == nullptr) {
+      // Names flow top to bottom, so this also covers using a name before the
+      // line that defines it.
+      return make_error(ErrorCode::UndefinedName,
+                        "undefined name '" + identifier->name + "'",
+                        identifier->column);
+    }
+    return binding->value;
+  }
   if (const auto* unary = std::get_if<Unary>(&node.kind)) {
-    Result<Value> operand = evaluate(*unary->operand);
+    Result<Value> operand = evaluate(*unary->operand, environment);
     if (!operand) return operand.error();
     return unary->op == '-' ? -operand.value() : operand.value();
   }
   if (const auto* binary = std::get_if<Binary>(&node.kind)) {
-    return evaluate_binary(*binary);
+    return evaluate_binary(*binary, environment);
   }
-  return evaluate_call(std::get<Call>(node.kind));
+  return evaluate_call(std::get<Call>(node.kind), environment);
 }
 
 }  // namespace calc

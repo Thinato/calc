@@ -20,6 +20,7 @@ enum class TokenKind {
   LParen,
   RParen,
   Comma,
+  Equals,
   Identifier,
   End,
 };
@@ -34,6 +35,11 @@ struct Token {
 // Splits a line into tokens. Whitespace is skipped and a '#' starts a comment
 // that runs to the end of the line. The returned vector always ends with an
 // End token.
+//
+// Names are letters and underscores only. Identifiers are still read greedily
+// including digits so that a malformed name arrives here whole and can be
+// reported as such: "x1" produces one InvalidName error rather than silently
+// splitting into the name "x" and the number "1".
 Result<std::vector<Token>> tokenize(std::string_view line);
 
 // True when the line holds nothing to evaluate: empty, whitespace only, or a

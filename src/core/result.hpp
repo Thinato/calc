@@ -18,6 +18,13 @@ enum class ErrorCode {
   DivisionByZero,
   DomainError,
   NotFinite,
+  // Names: variables and constants.
+  InvalidName,
+  UndefinedName,
+  ConstantReassigned,
+  NameIsFunction,
+  AssignmentTarget,
+  MultipleAssignment,
 };
 
 // An evaluation failure. `column` is a 0-based byte offset into the source line

@@ -13,6 +13,8 @@ inline ftxui::Color mode_normal() { return ftxui::Color::Blue; }
 inline ftxui::Color mode_insert() { return ftxui::Color::Green; }
 inline ftxui::Color mode_visual() { return ftxui::Color::Magenta; }
 inline ftxui::Color mode_command() { return ftxui::Color::Yellow; }
+inline ftxui::Color variable() { return ftxui::Color::Yellow; }
+inline ftxui::Color constant() { return ftxui::Color::Magenta; }
 inline ftxui::Color error() { return ftxui::Color::Red; }
 inline ftxui::Color notice() { return ftxui::Color::GrayLight; }
 inline ftxui::Color comment() { return ftxui::Color::GrayDark; }

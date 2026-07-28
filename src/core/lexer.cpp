@@ -18,6 +18,15 @@ bool is_ident_start(char c) {
 
 bool is_ident_continue(char c) { return is_ident_start(c) || is_digit(c); }
 
+// Builds the diagnostic for a name that cannot exist, quoting the whole span the
+// user typed so the message names the thing they wrote.
+Error invalid_name(std::string_view span, std::size_t column, std::string_view reason) {
+  return make_error(ErrorCode::InvalidName,
+                    "invalid name '" + std::string(span) + "': names cannot " +
+                        std::string(reason),
+                    column);
+}
+
 }  // namespace
 
 std::string_view describe(TokenKind kind) {
@@ -31,6 +40,7 @@ std::string_view describe(TokenKind kind) {
     case TokenKind::LParen: return "'('";
     case TokenKind::RParen: return "')'";
     case TokenKind::Comma: return "','";
+    case TokenKind::Equals: return "'='";
     case TokenKind::Identifier: return "a name";
     case TokenKind::End: return "end of line";
   }
@@ -82,6 +92,16 @@ Result<std::vector<Token>> tokenize(std::string_view line) {
         }
       }
 
+      // A digit run touching a letter or underscore is a name that starts with a
+      // digit, which no name may do. Reported over the whole span so "1_x" is
+      // named rather than dissolving into a number and a separate name.
+      if (i < line.size() && is_ident_start(line[i])) {
+        std::size_t end = i;
+        while (end < line.size() && is_ident_continue(line[end])) ++end;
+        return invalid_name(line.substr(start, end - start), start,
+                            "start with a digit");
+      }
+
       const std::string digits(line.substr(start, i - start));
       token.kind = TokenKind::Number;
       token.number = std::strtod(digits.c_str(), nullptr);
@@ -92,8 +112,21 @@ Result<std::vector<Token>> tokenize(std::string_view line) {
     if (is_ident_start(c)) {
       const std::size_t start = i;
       while (i < line.size() && is_ident_continue(line[i])) ++i;
+      const std::string_view span = line.substr(start, i - start);
+
+      // A '.' touching a name is part of the name the user meant, not an
+      // operator: "x.y" is one bad name rather than two good ones.
+      if (i < line.size() && line[i] == '.') {
+        std::size_t end = i + 1;
+        while (end < line.size() && is_ident_continue(line[end])) ++end;
+        return invalid_name(line.substr(start, end - start), start, "contain '.'");
+      }
+      if (span.find_first_of("0123456789") != std::string_view::npos) {
+        return invalid_name(span, start, "contain digits");
+      }
+
       token.kind = TokenKind::Identifier;
-      token.text = std::string(line.substr(start, i - start));
+      token.text = std::string(span);
       tokens.push_back(std::move(token));
       continue;
     }
@@ -107,6 +140,7 @@ Result<std::vector<Token>> tokenize(std::string_view line) {
       case '(': token.kind = TokenKind::LParen; break;
       case ')': token.kind = TokenKind::RParen; break;
       case ',': token.kind = TokenKind::Comma; break;
+      case '=': token.kind = TokenKind::Equals; break;
       default:
         return make_error(ErrorCode::UnexpectedCharacter,
                           std::string("unexpected character '") + c + "'", i);

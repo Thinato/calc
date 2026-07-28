@@ -39,7 +39,7 @@ const std::vector<Key>& key_alphabet() {
   static const std::vector<Key> kKeys = [] {
     std::vector<Key> keys;
     for (char byte : std::string("hjkl0^$wbeWBEGgfFtT%{}|dcyxXsDCSYpPurR~Jv"
-                                 "V.nN123456789\"aiIoOAelq:/?+-*^() 	")) {
+                                 "V.nN123456789\"aiIoOAelq:/?+-*^()= 	")) {
       keys.push_back(Key::character(byte));
     }
     keys.push_back(Key::special(Key::Type::Escape));
@@ -123,10 +123,23 @@ TEST_CASE("a result never leaks into the buffer text") {
       results.refresh(document);
     }
 
-    // The engine has no path that copies a computed result into a line: `gy`
-    // reaches the register and the clipboard, never the document.
-    const std::string text = document.to_text();
-    CHECK(text.find(" = ") == std::string::npos);
+    // Assert the property actually claimed, rather than banning a character:
+    // '=' is legitimate typed text now that assignments exist, but a *computed*
+    // value must never end up in a line. The engine has no path that could put
+    // one there — `gy` reaches the register and the clipboard, never the
+    // document — and this is what holds that guarantee.
+    for (std::size_t row = 0; row < document.line_count(); ++row) {
+      const LineEval& eval = results.at(row);
+      if (!eval.has_result()) continue;
+      const std::string& line = document.line(row);
+      const std::string rendered = " = " + eval.text;
+      const bool ends_with_result =
+          line.size() >= rendered.size() &&
+          line.compare(line.size() - rendered.size(), rendered.size(), rendered) == 0;
+      CAPTURE(line);
+      CAPTURE(rendered);
+      REQUIRE_FALSE(ends_with_result);
+    }
   }
 }
 

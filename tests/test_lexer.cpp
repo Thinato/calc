@@ -57,12 +57,13 @@ TEST_CASE("tokenize accepts leading-dot and exponent numbers") {
     CHECK(tokens.value()[0].kind == TokenKind::Number);
     CHECK(tokens.value()[0].number == doctest::Approx(1.26765060023e+30));
   }
-  SUBCASE("a bare 'e' is not swallowed into the number") {
+  SUBCASE("a digit touching a letter is a malformed name, not two tokens") {
+    // "2e" is not a number followed by the name e. With E a built-in constant,
+    // this is the implicit multiplication a user might reach for, and it has to
+    // fail clearly rather than parse into something surprising.
     const auto tokens = tokenize("2e");
-    REQUIRE(tokens.ok());
-    CHECK(tokens.value()[0].kind == TokenKind::Number);
-    CHECK(tokens.value()[0].number == doctest::Approx(2.0));
-    CHECK(tokens.value()[1].kind == TokenKind::Identifier);
+    REQUIRE_FALSE(tokens.ok());
+    CHECK(tokens.error().code == ErrorCode::InvalidName);
   }
 }
 

@@ -263,6 +263,13 @@ TEST_CASE("gy yanks the result of the current line") {
   CHECK(apply("1 + 2", "gY").unnamed == "1 + 2 = 3");
 }
 
+TEST_CASE("gy reaches the value of a definition even when it is not shown") {
+  CHECK(apply("x = 5", "gy").unnamed == "5");
+  // gY would otherwise produce "x = 5 = 5".
+  CHECK(apply("x = 5", "gY").unnamed == "x = 5");
+  CHECK(apply("x = 1 + 2", "gY").unnamed == "x = 1 + 2 = 3");
+}
+
 TEST_CASE("gy on a line with no result says so") {
   const auto outcome = apply("not an expression", "gy");
   CHECK(outcome.message_is_error);

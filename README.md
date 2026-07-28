@@ -6,15 +6,16 @@ its result is shown after it and cannot be edited.
 ```
  1 1 + 2 = 3
  2 sqrt(16) + pow(2, 10) = 1028
- 3 (1 + 2) * 3 ^ 2 = 27
- 4
+ 3 subtotal = 128.40
+ 4 subtotal * 0.0825 = 10.593
+ 5
 ~
 ────────────────────────────────────────────────────────────
- NORMAL  notes.calc [+]                                 4:1
+ NORMAL  notes.calc [+]                                 5:1
 ```
 
 It behaves like a text editor rather than a prompt: move around, edit any line,
-and every result updates as you type.
+name values and reuse them, and every result updates as you type.
 
 ## Build
 
@@ -24,7 +25,7 @@ automatically, so a fresh clone needs nothing installed.
 ```sh
 cmake --preset default
 cmake --build build
-ctest --test-dir build          # 124 tests, no terminal required
+ctest --test-dir build          # 166 tests, no terminal required
 ./build/calc                    # scratch buffer
 ./build/calc notes.calc         # open a file
 ```
@@ -38,6 +39,7 @@ ctest --test-dir build          # 124 tests, no terminal required
 | `(` `)` | grouping |
 | `pow(a, b)` | power |
 | `sqrt(a)` | square root |
+| `name = expr` | define a variable or constant |
 | `#` | comment to the end of the line |
 
 Precedence is the ordinary mathematical one, so `1 + 2 * 3` is `7` and `-2^2` is
@@ -49,6 +51,46 @@ and `0.1 + 0.2` reads `0.3` rather than `0.30000000000000004`.
 A line that does not parse simply shows no result — a half-typed expression is
 the normal state while typing. The reason appears in the bottom line when the
 cursor is on that line, with the column it went wrong at.
+
+## Variables and constants
+
+Name a value and reuse it below:
+
+```
+ 1 subtotal = 128.40
+ 2 RATE = 0.0825
+ 3 tip = subtotal * 0.2 = 25.68
+ 4 subtotal * RATE = 10.593
+ 5 subtotal + tip = 154.08
+```
+
+Which kind of name you get is decided by spelling alone:
+
+| | |
+| --- | --- |
+| **variable** | holds at least one lowercase letter — `x`, `test`, `helloWorld`, `xOne`. Reassign it freely. |
+| **constant** | holds no lowercase letters — `PI`, `RATE`, `TEST_ONE`. Defining it twice is an error that names the line it came from. |
+
+`PI`, `E` and `TAU` are built in, and protected by the same rule, so `PI = 3` is
+an error rather than a silent redefinition.
+
+Names are **letters and underscores only**. `x1`, `1_x` and `x.y` are rejected,
+and the message quotes what you typed rather than mis-reading it as something
+else:
+
+```
+x1 = 5      col 1: invalid name 'x1': names cannot contain digits
+```
+
+Names resolve **top to bottom**, like reading a script. A name works only below
+the line that defines it, so using one earlier is an `undefined name` error — and
+`x = x + 1` therefore reads as an increment. Editing a definition recomputes
+every line under it as you type.
+
+A definition shows its computed value unless you typed the value out literally:
+`x = 1 + 2` gains `= 3`, while `subtotal = 128.40` shows nothing extra, because a
+number already on the line does not need restating (and `128.40` should not
+visibly become `128.4` beside itself). `gy` still yanks the value either way.
 
 ## Keys
 
@@ -94,13 +136,14 @@ after the result. And `:w` writes only the expressions, so a saved file stays
 clean and reopens unchanged.
 
 `tests/test_invariants.cpp` enforces this by feeding the engine random key
-sequences and asserting the cursor never passes the end of a line and no `=`
-ever appears in the buffer.
+sequences and asserting the cursor never passes the end of a line, and that no
+line ever ends with the result rendered for it. (Note it cannot simply ban `=`
+from the buffer: since assignments exist, `=` is legitimate text you type.)
 
 ## Layout
 
 ```
-src/core/    expression language: lexer, parser, eval, number formatting
+src/core/    expression language: lexer, parser, eval, environment, formatting
 src/doc/     the buffer, cursor, undo, result cache, file IO
 src/vim/     the modal editor: motions, operators, state machine, ex commands
 src/ui/      FTXUI rendering and the event loop

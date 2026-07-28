@@ -103,7 +103,16 @@ class Parser {
       return inner;
     }
 
-    if (token.kind == TokenKind::Identifier) return parse_call();
+    if (token.kind == TokenKind::Identifier) {
+      // A name followed by '(' is a call attempt, even an unknown one, so that
+      // `sin(1)` reports "unknown function" rather than "unexpected '('". A
+      // known function name without '(' also routes to parse_call, which asks
+      // for the missing parenthesis. Anything else is a variable or constant.
+      const bool looks_like_call = tokens_[position_ + 1].kind == TokenKind::LParen;
+      if (looks_like_call || find_function(token.text) != nullptr) return parse_call();
+      advance();
+      return make_node<Identifier>(token.text, token.column);
+    }
 
     if (token.kind == TokenKind::End) {
       return make_error(ErrorCode::UnexpectedEnd, "incomplete expression", token.column);
@@ -168,6 +177,66 @@ Result<NodePtr> parse(std::string_view line) {
   Result<std::vector<Token>> tokens = tokenize(line);
   if (!tokens) return tokens.error();
   return parse(tokens.value());
+}
+
+Result<Statement> parse_statement(const std::vector<Token>& tokens) {
+  // Locate the assignment '=' at paren depth zero. A second one at that depth
+  // means a chained assignment, which the language does not have.
+  constexpr std::size_t kNone = static_cast<std::size_t>(-1);
+  std::size_t equals = kNone;
+  std::size_t second_equals = kNone;
+  int depth = 0;
+
+  for (std::size_t index = 0; index < tokens.size(); ++index) {
+    switch (tokens[index].kind) {
+      case TokenKind::LParen: ++depth; break;
+      case TokenKind::RParen: --depth; break;
+      case TokenKind::Equals:
+        if (depth == 0) {
+          if (equals == kNone) {
+            equals = index;
+          } else if (second_equals == kNone) {
+            second_equals = index;
+          }
+        }
+        break;
+      default: break;
+    }
+  }
+
+  if (equals == kNone) {
+    Result<NodePtr> expression = parse(tokens);
+    if (!expression) return expression.error();
+    return Statement{std::nullopt, 0, std::move(expression.value())};
+  }
+
+  if (second_equals != kNone) {
+    return make_error(ErrorCode::MultipleAssignment, "only one '=' per line",
+                      tokens[second_equals].column);
+  }
+  if (equals == 0) {
+    return make_error(ErrorCode::AssignmentTarget, "expected a name before '='",
+                      tokens[0].column);
+  }
+  if (equals != 1 || tokens[0].kind != TokenKind::Identifier) {
+    return make_error(ErrorCode::AssignmentTarget, "the left of '=' must be a name",
+                      tokens[equals].column);
+  }
+
+  // Everything after the '=' is the value, including the trailing End token that
+  // the expression parser needs to see.
+  const std::vector<Token> value(tokens.begin() + static_cast<std::ptrdiff_t>(equals) + 1,
+                                 tokens.end());
+  Result<NodePtr> expression = parse(value);
+  if (!expression) return expression.error();
+
+  return Statement{tokens[0].text, tokens[0].column, std::move(expression.value())};
+}
+
+Result<Statement> parse_statement(std::string_view line) {
+  Result<std::vector<Token>> tokens = tokenize(line);
+  if (!tokens) return tokens.error();
+  return parse_statement(tokens.value());
 }
 
 }  // namespace calc

@@ -22,11 +22,31 @@ sqrt(pow(3, 2))
 # The example from the brief
 sqrt(16) + pow(2, 10)
 
-# Split a bill three ways
-128.40 / 3
+# Name a value and reuse it below. A definition whose value you typed out
+# shows nothing extra, because the number is already on the line.
+subtotal = 128.40
+tip = subtotal * 0.2
+subtotal + tip
+
+# A name with no lowercase letters is a constant: defining it twice is an
+# error. Uncomment the second line to see it reported.
+RATE = 0.0825
+# RATE = 0.09
+subtotal * RATE
+
+# PI, E and TAU are built in, and protected by the same rule.
+PI
+TAU
+radius = 3
+PI * radius ^ 2
+
+# Names resolve top to bottom, so this reads as an increment.
+count = 1
+count = count + 1
 
 # These lines show no result. Put the cursor on one to read why.
 1 +
 1 / 0
 sqrt(-1)
-
+undefined_name * 2
+x1 = 5

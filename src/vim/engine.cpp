@@ -1094,7 +1094,17 @@ void VimEngine::yank_result(bool with_expression) {
   }
 
   Register value;
-  value.text = with_expression ? document_.line(row) + " = " + eval.text : eval.text;
+  if (!with_expression) {
+    // `gy` yanks the value even where it is not displayed, so the number behind
+    // `x = 5` is still reachable.
+    value.text = eval.text;
+  } else if (eval.show_result) {
+    value.text = document_.line(row) + " = " + eval.text;
+  } else {
+    // The line already reads as `name = value`; appending would give
+    // "subtotal = 128.40 = 128.4".
+    value.text = document_.line(row);
+  }
   registers_['"'] = value;
   registers_['0'] = value;
   if (clipboard_writer_) clipboard_writer_(value.text);

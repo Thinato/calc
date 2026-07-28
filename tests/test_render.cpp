@@ -109,6 +109,42 @@ TEST_CASE("a half-typed expression shows no inline error") {
   CHECK(contains(lines, "incomplete expression"));
 }
 
+TEST_CASE("a definition renders its computed value after the expression") {
+  const auto lines = render_lines("x = 1 + 2", "");
+  CHECK(contains(lines, "x = 1 + 2 = 3"));
+}
+
+TEST_CASE("a definition with a typed value gains no second '='") {
+  const auto lines = render_lines("subtotal = 128.40", "", 60);
+  CHECK(contains(lines, "subtotal = 128.40"));
+  // Neither restated nor silently reformatted to 128.4.
+  CHECK_FALSE(contains(lines, "128.40 ="));
+  CHECK_FALSE(contains(lines, "128.4 "));
+}
+
+TEST_CASE("the worked example renders as designed") {
+  const auto lines = render_lines(
+      "subtotal = 128.40\nRATE = 0.0825\ntip = subtotal * 0.2\n"
+      "subtotal * RATE\nsubtotal + tip",
+      "", 60, 12);
+  CHECK(contains(lines, "subtotal = 128.40"));
+  CHECK(contains(lines, "RATE = 0.0825"));
+  CHECK(contains(lines, "tip = subtotal * 0.2 = 25.68"));
+  CHECK(contains(lines, "subtotal * RATE = 10.593"));
+  CHECK(contains(lines, "subtotal + tip = 154.08"));
+}
+
+TEST_CASE("a name used before it is defined reports itself in the status bar") {
+  const auto lines = render_lines("x * 2\nx = 5", "");
+  CHECK(contains(lines, "undefined name 'x'"));
+  CHECK_FALSE(contains(lines, "x * 2 ="));  // and shows nothing inline
+}
+
+TEST_CASE("reassigning a constant reports where it came from") {
+  const auto lines = render_lines("TEST = 2\nTEST = 5", "j", 60);
+  CHECK(contains(lines, "TEST is a constant, defined on line 1"));
+}
+
 TEST_CASE("an error names the column it happened at") {
   const auto lines = render_lines("10 + 1 / 0", "");
   CHECK(contains(lines, "col 8: division by zero"));  // the '/'

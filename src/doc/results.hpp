@@ -1,10 +1,10 @@
 #pragma once
 
 #include <cstddef>
-#include <string>
 #include <vector>
 
 #include "core/engine.hpp"
+#include "core/environment.hpp"
 #include "doc/document.hpp"
 
 namespace calc {
@@ -12,10 +12,12 @@ namespace calc {
 // Per-line evaluation results, recomputed once per frame instead of inside the
 // edit path.
 //
-// Invalidation compares each row against the text that was last evaluated for
-// it. That is a string compare per line per frame — nothing for a scratchpad —
-// and it removes any chance of a stale result caused by a missed invalidation
-// signal, which is the usual failure mode of a dirty-flag scheme.
+// Names flow top to bottom, so a change anywhere can alter every line below it —
+// a line whose own text did not change may still need a new result. The whole
+// file is therefore re-evaluated in one pass, guarded on Document::revision(),
+// which moves on every mutation and is an exact signal. That is simpler than a
+// dependency graph and cannot go stale, and a scratchpad is far too small for the
+// difference in cost to show.
 class ResultCache {
  public:
   void refresh(const Document& document);
@@ -23,14 +25,14 @@ class ResultCache {
   const LineEval& at(std::size_t row) const;
   std::size_t size() const { return entries_.size(); }
 
- private:
-  struct Entry {
-    std::string source;
-    LineEval eval;
-    bool evaluated = false;  // distinguishes "not yet run" from "ran, no result"
-  };
+  // The names in effect at the end of the file.
+  const Environment& environment() const { return environment_; }
 
-  std::vector<Entry> entries_;
+ private:
+  std::vector<LineEval> entries_;
+  Environment environment_;
+  std::size_t revision_ = 0;
+  bool primed_ = false;
 };
 
 }  // namespace calc
