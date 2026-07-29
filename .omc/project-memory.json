@@ -112,21 +112,21 @@
   },
   "hotPaths": [
     {
-      "path": "src/ui/layout.cpp",
-      "accessCount": 6,
-      "lastAccessed": 1785335555641,
+      "path": "tests/test_render.cpp",
+      "accessCount": 13,
+      "lastAccessed": 1785344613406,
       "type": "file"
     },
     {
-      "path": "tests/test_render.cpp",
-      "accessCount": 6,
-      "lastAccessed": 1785335561896,
+      "path": "src/ui/layout.cpp",
+      "accessCount": 12,
+      "lastAccessed": 1785344402077,
       "type": "file"
     },
     {
       "path": "README.md",
-      "accessCount": 5,
-      "lastAccessed": 1785335380730,
+      "accessCount": 7,
+      "lastAccessed": 1785344438470,
       "type": "file"
     },
     {
@@ -136,9 +136,21 @@
       "type": "file"
     },
     {
+      "path": "src/core/lexer.hpp",
+      "accessCount": 2,
+      "lastAccessed": 1785344096542,
+      "type": "file"
+    },
+    {
+      "path": "src/core/lexer.cpp",
+      "accessCount": 2,
+      "lastAccessed": 1785344106765,
+      "type": "file"
+    },
+    {
       "path": "src/ui/theme.hpp",
-      "accessCount": 1,
-      "lastAccessed": 1785334720951,
+      "accessCount": 2,
+      "lastAccessed": 1785344132449,
       "type": "file"
     },
     {
@@ -163,6 +175,30 @@
       "path": "examples/demo.calc",
       "accessCount": 1,
       "lastAccessed": 1785335384708,
+      "type": "file"
+    },
+    {
+      "path": "src/core/parser.cpp",
+      "accessCount": 1,
+      "lastAccessed": 1785339691308,
+      "type": "file"
+    },
+    {
+      "path": "src/core/syntax.hpp",
+      "accessCount": 1,
+      "lastAccessed": 1785344115985,
+      "type": "file"
+    },
+    {
+      "path": "src/core/syntax.cpp",
+      "accessCount": 1,
+      "lastAccessed": 1785344124716,
+      "type": "file"
+    },
+    {
+      "path": "tests/test_syntax.cpp",
+      "accessCount": 1,
+      "lastAccessed": 1785344193167,
       "type": "file"
     }
   ],

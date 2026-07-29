@@ -17,6 +17,15 @@ inline ftxui::Color variable() { return ftxui::Color::Yellow; }
 inline ftxui::Color constant() { return ftxui::Color::Magenta; }
 inline ftxui::Color error() { return ftxui::Color::Red; }
 inline ftxui::Color notice() { return ftxui::Color::GrayLight; }
-inline ftxui::Color comment() { return ftxui::Color::GrayDark; }
+
+// The two 256-colour values here, where every other colour is a 16-colour name
+// that follows the terminal's own scheme. Both want a specific shade rather than
+// a role: a comment should read as dimmed text, distinctly not as dim as the
+// GrayDark gutter beside it, and a function should be a pale blue that cannot be
+// mistaken for the cyan result on the same line. FTXUI degrades a Palette256
+// value to its nearest 16-colour index when the terminal claims no 256-colour
+// support, so this costs nothing on a plainer terminal.
+inline ftxui::Color comment() { return ftxui::Color::Grey62; }
+inline ftxui::Color function() { return ftxui::Color::SkyBlue1; }
 
 }  // namespace calc::theme

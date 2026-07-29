@@ -26,7 +26,7 @@ automatically, so a fresh clone needs nothing installed.
 ```sh
 cmake --preset default
 cmake --build build
-ctest --test-dir build          # 166 tests, no terminal required
+ctest --test-dir build          # 190 tests, no terminal required
 ./build/calc                    # scratch buffer
 ./build/calc notes.calc         # open a file
 ```
@@ -48,6 +48,26 @@ Precedence is the ordinary mathematical one, so `1 + 2 * 3` is `7` and `-2^2` is
 
 Results are formatted the way a calculator should: `3` rather than `3.000000`,
 and `0.1 + 0.2` reads `0.3` rather than `0.30000000000000004`.
+
+## Colour
+
+Every colour answers one question, so the screen can be read at a glance:
+
+| | |
+| --- | --- |
+| dimmed | a comment — prose to skim past |
+| light blue | a function: `sqrt`, `pow` |
+| yellow | a variable, where it is defined |
+| magenta | a constant, where it is defined |
+| cyan | a result |
+| red | an error |
+
+A name is light blue only when it really is a function, so `foo(2)` stays plain
+and agrees with the `unknown function` beside it. Only the line that *defines* a
+name colours it; later uses of `subtotal` are left alone.
+
+On a terminal without 256-colour support each shade falls back to the nearest of
+the basic sixteen.
 
 ## Errors
 

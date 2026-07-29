@@ -42,6 +42,14 @@ struct Token {
 // splitting into the name "x" and the number "1".
 Result<std::vector<Token>> tokenize(std::string_view line);
 
+// The character rules a name obeys, exported so that anything else needing to
+// agree with the lexer about where a name begins and ends can ask rather than
+// keep its own copy. Letters and underscores start one; a digit may only
+// continue one, which is what lets "x1" be read whole and rejected as a name
+// instead of splitting into "x" and "1".
+bool is_ident_start(char c);
+bool is_ident_continue(char c);
+
 // True when the line holds nothing to evaluate: empty, whitespace only, or a
 // comment only.
 bool is_blank_or_comment(std::string_view line);

@@ -4,13 +4,26 @@
 #include <vector>
 
 #include <ftxui/screen/screen.hpp>
+#include <ftxui/screen/terminal.hpp>
 
 #include "helpers/vim_harness.hpp"
 #include "ui/layout.hpp"
+#include "ui/theme.hpp"
 
 using namespace calc;
 
 namespace {
+
+// FTXUI decides colour support from TERM and COLORTERM, and downgrades a
+// 256-colour value to its nearest 16-colour index when it doubts the terminal.
+// Pinned here, before any Color is constructed, so that what the colour
+// assertions below see does not depend on whose shell ran ctest.
+struct ColorSupportPin {
+  ColorSupportPin() {
+    ftxui::Terminal::SetColorSupport(ftxui::Terminal::Palette256);
+  }
+};
+const ColorSupportPin kColorSupportPin;
 
 // Renders a frame to an off-screen buffer. No terminal is involved, which is
 // what makes the layout testable at all.
@@ -72,6 +85,54 @@ bool contains(const std::vector<std::string>& lines, std::string_view needle) {
   }
   return false;
 }
+
+// Tells a foreground code apart from the background and attribute codes FTXUI
+// emits alongside it — it writes both colours on any change, so an escape
+// sequence on its own says little.
+bool is_foreground(const std::string& code) {
+  if (code == "39" || code == "0") return true;  // back to the terminal's default
+  if (code.rfind("38;", 0) == 0) return true;    // 256-colour or true colour
+  if (code.size() != 2) return false;            // an attribute, not a colour
+  return (code[0] == '3' || code[0] == '9') && code[1] >= '0' && code[1] <= '7';
+}
+
+// The foreground colour in effect where `needle` begins, as the SGR payload
+// ("38;5;247", or "39" for the terminal's own default). Colour is exactly what
+// plain() throws away; asserting on it by position rather than by matching whole
+// escape sequences keeps these tests indifferent to how FTXUI groups and orders
+// them.
+std::string color_at(const std::vector<std::string>& lines, std::string_view needle) {
+  for (const std::string& line : lines) {
+    std::string visible;
+    std::vector<std::string> foreground;  // one entry per byte of `visible`
+    std::string current = "39";
+
+    for (std::size_t index = 0; index < line.size();) {
+      if (line[index] == '\x1B') {
+        const std::size_t end = line.find('m', index);
+        if (end == std::string::npos) break;
+        const std::string code = line.substr(index + 2, end - index - 2);
+        // "0" clears every attribute, the foreground among them, and is how FTXUI
+        // ends a bold run — so it has to count as a colour change, not be skipped
+        // as an attribute.
+        if (is_foreground(code)) current = code == "0" ? "39" : code;
+        index = end + 1;
+        continue;
+      }
+      visible += line[index++];
+      foreground.push_back(current);
+    }
+
+    const std::size_t at = visible.find(needle);
+    if (at != std::string::npos) return foreground[at];
+  }
+  return "[not on screen]";
+}
+
+// What the theme asked for, in the form the screen writes it.
+std::string expected(ftxui::Color color) { return color.Print(false); }
+
+constexpr std::string_view kTerminalDefault = "39";
 
 }  // namespace
 
@@ -186,6 +247,73 @@ TEST_CASE("a long error clips itself rather than the expression") {
   const auto lines = render_lines("undefined_name * 2\nx = 1", "j", 30);
   CHECK(contains(lines, "undefined_name * 2  Error: "));
   CHECK_FALSE(contains(lines, "undefined_name'"));  // the message lost its tail
+}
+
+TEST_CASE("a comment is drawn in the comment colour") {
+  // Its '#' included, on a line the cursor is not on, which is prose's ordinary
+  // state.
+  const auto lines = render_lines("# just a note\n1 + 2", "j");
+  CHECK(color_at(lines, "# just a note") == expected(theme::comment()));
+  // And the expression below it is left in the terminal's own foreground.
+  CHECK(color_at(lines, "1 + 2") == kTerminalDefault);
+}
+
+TEST_CASE("a comment reads as quiet content, not as chrome") {
+  // The point of the shade: dimmer than what you typed, but not the same dim as
+  // the line numbers, or the eye cannot separate the two.
+  const auto lines = render_lines("# just a note\n1 + 2", "j");
+  CHECK(color_at(lines, " 1 ") == expected(theme::gutter()));  // the gutter beside it
+  CHECK(color_at(lines, "# just a note") != color_at(lines, " 1 "));
+  CHECK(color_at(lines, "# just a note") != kTerminalDefault);
+}
+
+TEST_CASE("a function name is drawn in the function colour") {
+  // The cursor starts on the 's' and would occupy that cell, so it moves away.
+  const auto lines = render_lines("sqrt(16) + pow(2, 10)\n1 + 2", "j", 60);
+  CHECK(color_at(lines, "sqrt") == expected(theme::function()));
+  CHECK(color_at(lines, "pow") == expected(theme::function()));
+  // Only the name: the parentheses and the arguments stay plain, so what stands
+  // out is the thing being called.
+  CHECK(color_at(lines, "(16)") == kTerminalDefault);
+  CHECK(color_at(lines, "2, 10") == kTerminalDefault);
+}
+
+TEST_CASE("a function does not read as its own result") {
+  // Light blue against the cyan result. If these matched, `sqrt(16) = 4` would
+  // look like the line restating part of itself.
+  const auto lines = render_lines("sqrt(16)", "");
+  CHECK(color_at(lines, "4") == expected(theme::result()));
+  CHECK(color_at(lines, "sqrt") != color_at(lines, "4"));
+}
+
+TEST_CASE("a function named inside a comment is not coloured as a call") {
+  const auto lines = render_lines("# use sqrt for that\n1 + 2", "j", 60);
+  CHECK(color_at(lines, "sqrt") == expected(theme::comment()));
+}
+
+TEST_CASE("the cursor still shows inside a comment") {
+  // Syntax sits at the bottom of the precedence order: knowing where you are
+  // matters more than what you are looking at.
+  const auto lines = render_lines("# a note", "");
+  CHECK(color_at(lines, "#") == kTerminalDefault);  // the cursor cell, inverted
+  CHECK(color_at(lines, " a note") == expected(theme::comment()));
+}
+
+TEST_CASE("a definition keeps its own colour beside the new ones") {
+  // The cursor moves off the name first, or it would cover the character these
+  // look at.
+  CHECK(color_at(render_lines("subtotal = 128.40\n1 + 2", "j", 60), "subtotal") ==
+        expected(theme::variable()));
+  CHECK(color_at(render_lines("RATE = 0.0825\n1 + 2", "j", 60), "RATE") ==
+        expected(theme::constant()));
+}
+
+TEST_CASE("a function name cannot be redefined, and stays coloured as one") {
+  // The colour and the error agree: a function name is not available to define,
+  // so it is still a function here rather than a new variable.
+  const auto lines = render_lines("sqrt = 5\n1 + 2", "j", 60);
+  CHECK(color_at(lines, "sqrt") == expected(theme::function()));
+  CHECK(contains(lines, "Error: 'sqrt' is a function"));
 }
 
 TEST_CASE("the status bar names the mode and the cursor position") {

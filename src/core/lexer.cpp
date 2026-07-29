@@ -12,12 +12,6 @@ bool is_space(char c) {
 
 bool is_digit(char c) { return c >= '0' && c <= '9'; }
 
-bool is_ident_start(char c) {
-  return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_';
-}
-
-bool is_ident_continue(char c) { return is_ident_start(c) || is_digit(c); }
-
 // Builds the diagnostic for a name that cannot exist, quoting the whole span the
 // user typed so the message names the thing they wrote.
 Error invalid_name(std::string_view span, std::size_t column, std::string_view reason) {
@@ -28,6 +22,12 @@ Error invalid_name(std::string_view span, std::size_t column, std::string_view r
 }
 
 }  // namespace
+
+bool is_ident_start(char c) {
+  return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_';
+}
+
+bool is_ident_continue(char c) { return is_ident_start(c) || is_digit(c); }
 
 std::string_view describe(TokenKind kind) {
   switch (kind) {

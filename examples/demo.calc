@@ -26,6 +26,7 @@ sqrt(16) + pow(2, 10)
 # shows nothing extra, because the number is already on the line.
 subtotal = 128.40
 tip = subtotal * 0.2
+
 subtotal + tip
 
 # A name with no lowercase letters is a constant: defining it twice is an
@@ -43,6 +44,10 @@ PI * radius ^ 2
 # Names resolve top to bottom, so this reads as an increment.
 count = 1
 count = count + 1
+count = count + 1
+count = count + 1
+count = count + 1
+count
 
 # These lines show why they failed, beside them. Move onto one and its
 # reason hides, so editing it is not a running commentary.

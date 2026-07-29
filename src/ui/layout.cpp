@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 
+#include "core/syntax.hpp"
 #include "doc/utf8.hpp"
 #include "ui/theme.hpp"
 
@@ -25,14 +26,23 @@ constexpr std::string_view kResultSeparator = " = ";
 constexpr std::string_view kErrorPrefix = "  Error: ";
 
 // Ordered by precedence: a cursor or a selection wins over a name highlight,
-// because knowing where you are matters more than what a name is.
-enum class CellStyle { Plain, Variable, Constant, Selected, Cursor };
+// because knowing where you are matters more than what a name is. Syntax sits at
+// the bottom, though the two never actually compete over the same characters — a
+// definition cannot be named after a function (Environment::define rejects that,
+// environment.cpp:51) and a name inside a comment is not a definition.
+enum class CellStyle { Plain, Comment, Function, Variable, Constant, Selected, Cursor };
 
 Element style_run(const std::string& run, CellStyle style, Mode mode) {
   Element element = text(run);
   switch (style) {
     case CellStyle::Plain:
       return element;
+    case CellStyle::Comment:
+      return element | color(theme::comment());
+    case CellStyle::Function:
+      // No bold: weight is how a constant and the two overlays stand out, and
+      // spending it here would leave nothing to stand out against.
+      return element | color(theme::function());
     case CellStyle::Variable:
       return element | color(theme::variable());
     case CellStyle::Constant:
@@ -54,6 +64,9 @@ Element style_run(const std::string& run, CellStyle style, Mode mode) {
 // selection, name highlight — would otherwise be seven positional arguments.
 struct LineStyling {
   Mode mode = Mode::Normal;
+  // What the line is made of: comments and function names. Ascending and
+  // non-overlapping, so walking it alongside the characters needs no search.
+  std::vector<SyntaxSpan> syntax;
   bool draw_cursor = false;
   std::size_t cursor_column = 0;
   bool selected_row = false;
@@ -79,10 +92,18 @@ Elements styled_line(const std::string& text_line, const LineStyling& styling) {
   };
 
   std::size_t index = 0;
+  std::size_t span = 0;
   while (index < text_line.size()) {
     const std::size_t next = utf8::next_boundary(text_line, index);
 
     CellStyle style = CellStyle::Plain;
+    // The spans ascend, so one forward-only cursor into them keeps this a single
+    // pass rather than a search per character.
+    while (span < styling.syntax.size() && styling.syntax[span].end <= index) ++span;
+    if (span < styling.syntax.size() && index >= styling.syntax[span].begin) {
+      style = styling.syntax[span].kind == SyntaxKind::Comment ? CellStyle::Comment
+                                                              : CellStyle::Function;
+    }
     if (index >= styling.name_begin && index < styling.name_end) {
       style = styling.name_is_constant ? CellStyle::Constant : CellStyle::Variable;
     }
@@ -256,6 +277,10 @@ ftxui::Element render_frame(const Document& document, const ResultCache& results
 
     LineStyling styling;
     styling.mode = engine.mode();
+    // Recomputed per visible row per frame: one scan of one line, for the twenty
+    // or so lines actually on screen. Caching it in ResultCache would tie an
+    // evaluation cache to a drawing concern for no measurable gain.
+    styling.syntax = syntax_spans(document.line(row));
     styling.draw_cursor = cursor_in_buffer && row == cursor.row;
     styling.cursor_column = cursor.column;
 
