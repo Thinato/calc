@@ -8,6 +8,11 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 option(CALC_SANITIZE "Build with AddressSanitizer + UndefinedBehaviorSanitizer" OFF)
 option(CALC_BUILD_TESTS "Build the test suite" ON)
 
+# What `calc --version` reports. The release workflow passes the tag it is
+# building, so a downloaded binary can say which release it came from; a local
+# build just uses the version declared above.
+set(CALC_VERSION "${PROJECT_VERSION}" CACHE STRING "Version reported by calc --version")
+
 add_library(calc_warnings INTERFACE)
 target_compile_options(calc_warnings INTERFACE
   $<$<CXX_COMPILER_ID:GNU,Clang,AppleClang>:-Wall -Wextra -Wpedantic>
@@ -59,6 +64,7 @@ file(GLOB_RECURSE CALC_UI_SOURCES CONFIGURE_DEPENDS
   "${CMAKE_CURRENT_SOURCE_DIR}/src/ui/*.cpp"
 )
 add_executable(calc src/main.cpp ${CALC_UI_SOURCES})
+target_compile_definitions(calc PRIVATE CALC_VERSION_STRING="${CALC_VERSION}")
 # ftxui::component transitively provides ftxui::dom and ftxui::screen.
 target_link_libraries(calc PRIVATE calc_core calc_warnings ftxui::component)
 

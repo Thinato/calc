@@ -18,6 +18,18 @@ its result is shown after it and cannot be edited.
 It behaves like a text editor rather than a prompt: move around, edit any line,
 name values and reuse them, and every result updates as you type.
 
+## Install
+
+```sh
+curl --proto '=https' --tlsv1.2 -sSf \
+  https://raw.githubusercontent.com/Thinato/calc/main/install.sh | sh
+```
+
+The binary lands in `~/.local/bin`. `CALC_INSTALL_DIR` changes where it goes and
+`CALC_VERSION` picks a release other than the latest. Published builds cover Linux
+x86_64 and arm64 (glibc 2.35 or newer) and macOS on Apple Silicon and Intel;
+anything else builds from source in a few seconds.
+
 ## Build
 
 Needs CMake 3.24+ and a C++20 compiler. FTXUI and doctest are fetched

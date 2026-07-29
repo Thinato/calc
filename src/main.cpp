@@ -7,7 +7,14 @@
 
 namespace {
 
-constexpr const char* kVersion = "calc 0.1.0";
+#ifndef CALC_VERSION_STRING
+// The build always defines this — from the tag being released, or from the
+// version in CMakeLists.txt. Saying "unknown" beats a hardcoded number that
+// quietly disagrees with the release it shipped in.
+#define CALC_VERSION_STRING "unknown"
+#endif
+
+constexpr const char* kVersion = "calc " CALC_VERSION_STRING;
 
 constexpr const char* kUsage =
     "calc — a vim-modal calculator scratchpad\n"
@@ -23,7 +30,7 @@ constexpr const char* kUsage =
     "keys        vim: h j k l w b e 0 ^ $ gg G f t %, d c y with any motion,\n"
     "            i a o O x r ~ J p P, u and Ctrl-R, v and V, / and ? with n N\n"
     "            gy yanks the result of the current line to the clipboard\n"
-    "            :w  :wq  :q  :q!  :e file  :set number  :help\n"
+    "            :w  :wq  :q  :q!  :e file  :set number  :github  :help\n"
     "\n"
     "options     -h, --help       this text\n"
     "            -v, --version    version\n";

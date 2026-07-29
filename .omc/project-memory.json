@@ -125,8 +125,8 @@
     },
     {
       "path": "README.md",
-      "accessCount": 9,
-      "lastAccessed": 1785357563709,
+      "accessCount": 10,
+      "lastAccessed": 1785358557812,
       "type": "file"
     },
     {
@@ -151,6 +151,12 @@
       "path": "src/ui/app.cpp",
       "accessCount": 3,
       "lastAccessed": 1785357493425,
+      "type": "file"
+    },
+    {
+      "path": "install.sh",
+      "accessCount": 3,
+      "lastAccessed": 1785358512918,
       "type": "file"
     },
     {
@@ -181,6 +187,18 @@
       "path": "tests/test_excmd.cpp",
       "accessCount": 2,
       "lastAccessed": 1785357519475,
+      "type": "file"
+    },
+    {
+      "path": "CMakeLists.txt",
+      "accessCount": 2,
+      "lastAccessed": 1785358364772,
+      "type": "file"
+    },
+    {
+      "path": "src/main.cpp",
+      "accessCount": 2,
+      "lastAccessed": 1785358375405,
       "type": "file"
     },
     {
