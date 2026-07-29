@@ -1,0 +1,101 @@
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+    branches: ["**"]
+
+env:
+  # Both tools change their output between major versions, so they are pinned:
+  # unpinned, a runner image upgrade would reformat the codebase under you or fail
+  # a check nobody changed. Install the same versions locally to match CI:
+  #   pip install clang-format==22.1.8 clang-tidy==22.1.8
+  CLANG_TOOLS_VERSION: 22.1.8
+
+jobs:
+  build:
+    name: Build & test (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        # Both, because the platform-specific paths are real: pbcopy against
+        # xclip, `open` against `xdg-open`, and Apple clang against GNU libstdc++.
+        os: [ubuntu-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+
+      # CALC_WERROR applies -Werror through this project's own warnings target,
+      # so FTXUI and doctest are not held to it. See CMakeLists.txt.
+      - name: Configure
+        run: >
+          cmake -B build
+          -DCMAKE_BUILD_TYPE=RelWithDebInfo
+          -DCALC_WERROR=ON
+
+      - name: Build
+        run: cmake --build build --parallel
+
+      - name: Test
+        run: ctest --test-dir build --output-on-failure
+
+      # The same suite again under AddressSanitizer and UndefinedBehaviorSanitizer.
+      # It is where the fuzz test in tests/test_invariants.cpp earns its keep: 120
+      # random keystrokes over a buffer, which is exactly the shape of thing that
+      # finds an out-of-bounds read.
+      - name: Configure (sanitizers)
+        run: >
+          cmake -B build-asan
+          -DCMAKE_BUILD_TYPE=Debug
+          -DCALC_SANITIZE=ON
+          -DCALC_WERROR=ON
+
+      - name: Build (sanitizers)
+        run: cmake --build build-asan --parallel
+
+      - name: Test (sanitizers)
+        run: ctest --test-dir build-asan --output-on-failure
+
+  format:
+    name: Format
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install clang-format ${{ env.CLANG_TOOLS_VERSION }}
+        run: pipx install "clang-format==${CLANG_TOOLS_VERSION}"
+
+      # --Werror turns "would reformat" into a failure; --dry-run keeps it from
+      # editing. The diff is not printed, so the fix is to run clang-format -i
+      # locally with the same version and commit what it does.
+      - name: Check formatting
+        run: |
+          clang-format --version
+          find src tests \( -name '*.cpp' -o -name '*.hpp' \) \
+            | xargs clang-format --dry-run --Werror
+
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install clang-tidy ${{ env.CLANG_TOOLS_VERSION }}
+        run: pipx install "clang-tidy==${CLANG_TOOLS_VERSION}"
+
+      # clang-tidy needs to know how each file is compiled, and needs the
+      # third-party headers on disk to follow an #include into them. Configuring is
+      # enough for both: FetchContent downloads FTXUI and doctest at configure
+      # time, and nothing here is a generated header. No build step, so this job
+      # stays quick.
+      - name: Configure for the compilation database
+        run: cmake -B build -DCMAKE_BUILD_TYPE=Debug -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+
+      # .clang-tidy sets WarningsAsErrors, so any finding fails the job. tests/
+      # has its own config relaxing one check that cannot see through doctest
+      # macros.
+      - name: Lint
+        run: |
+          clang-tidy --version
+          find src tests -name '*.cpp' | xargs clang-tidy -p build --quiet

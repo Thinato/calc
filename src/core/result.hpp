@@ -44,8 +44,8 @@ inline Error make_error(ErrorCode code, std::string message, std::size_t column)
 template <typename T>
 class Result {
  public:
-  Result(T value) : data_(std::move(value)) {}       // NOLINT(*-explicit-*)
-  Result(Error error) : data_(std::move(error)) {}   // NOLINT(*-explicit-*)
+  Result(T value) : data_(std::move(value)) {}      // NOLINT(*-explicit-*)
+  Result(Error error) : data_(std::move(error)) {}  // NOLINT(*-explicit-*)
 
   bool ok() const { return std::holds_alternative<T>(data_); }
   explicit operator bool() const { return ok(); }

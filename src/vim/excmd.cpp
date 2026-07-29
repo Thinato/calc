@@ -30,7 +30,8 @@ struct Parsed {
 Parsed split_command(std::string_view text) {
   Parsed parsed;
   std::size_t index = 0;
-  while (index < text.size() && (std::isalpha(static_cast<unsigned char>(text[index])) != 0)) {
+  while (index < text.size() &&
+         (std::isalpha(static_cast<unsigned char>(text[index])) != 0)) {
     ++index;
   }
   parsed.name = std::string(text.substr(0, index));

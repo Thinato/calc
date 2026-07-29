@@ -7,8 +7,7 @@
 
 namespace calc {
 
-Range resolve_range(const Document& document, Cursor start,
-                    const MotionResult& motion) {
+Range resolve_range(const Document& document, Cursor start, const MotionResult& motion) {
   Range range;
 
   if (motion.kind == MotionKind::Linewise) {

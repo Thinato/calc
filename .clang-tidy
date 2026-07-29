@@ -1,0 +1,35 @@
+---
+# Checks that look for defects, not for a house style — layout is .clang-format's
+# job, and the readability/modernize families disagree with this codebase on
+# purpose (the one-line guards, `if (run.empty()) return;`, are deliberate).
+#
+# Pinned tool version: clang-tidy 22.1.8 (see .github/workflows/ci.yml).
+Checks: >
+  bugprone-*,
+  cert-*,
+  clang-analyzer-*,
+  performance-*,
+  -bugprone-easily-swappable-parameters,
+  -bugprone-exception-escape,
+  -cert-err33-c,
+  -performance-enum-size
+
+# Every exclusion above, and why:
+#
+#   bugprone-easily-swappable-parameters
+#     Fires on any two adjacent parameters of the same type — Cursor from, Cursor
+#     to — which is most of the geometry in this program. It reports a shape, not
+#     a mistake.
+#   bugprone-exception-escape
+#     main() can throw, because reading a file allocates. Silencing it properly
+#     means wrapping main in a try/catch that prints something; worth doing one
+#     day, not worth a lint gate blocking on it today.
+#   cert-err33-c
+#     Wants the return value of every printf, fputs and fwrite checked. In a
+#     program whose whole output is a redrawn frame, there is nothing useful to do
+#     with the count of bytes written.
+#   performance-enum-size
+#     Wants uint8_t bases on small enums. Real, and irrelevant at this scale.
+
+WarningsAsErrors: '*'
+HeaderFilterRegex: '.*'

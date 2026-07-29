@@ -1,8 +1,8 @@
-#include <doctest/doctest.h>
-
 #include <cstdint>
 #include <string>
 #include <vector>
+
+#include <doctest/doctest.h>
 
 #include "doc/document.hpp"
 #include "doc/results.hpp"
@@ -158,10 +158,10 @@ TEST_CASE("neither a result nor an error leaks into the buffer text") {
 
 TEST_CASE("$ and A land at the end of the expression, not the result") {
   // The two motions a user would most plausibly expect to overshoot.
-  CHECK(apply("1 + 2", "$").cursor.column == 4);          // on '2'
-  CHECK(apply("1 + 2", "A").cursor.column == 5);          // after '2', insert
-  CHECK(apply("1 + 2", "Ax<esc>").buffer == "1 + 2x");    // appended to the text
-  CHECK(apply("1 + 2", "$x").buffer == "1 + ");           // deleted the '2'
+  CHECK(apply("1 + 2", "$").cursor.column == 4);        // on '2'
+  CHECK(apply("1 + 2", "A").cursor.column == 5);        // after '2', insert
+  CHECK(apply("1 + 2", "Ax<esc>").buffer == "1 + 2x");  // appended to the text
+  CHECK(apply("1 + 2", "$x").buffer == "1 + ");         // deleted the '2'
 }
 
 TEST_CASE("deleting to the end of a line stops at the typed text") {

@@ -1,8 +1,8 @@
-#include <doctest/doctest.h>
-
 #include <string>
 #include <string_view>
 #include <vector>
+
+#include <doctest/doctest.h>
 
 #include "core/engine.hpp"
 #include "core/environment.hpp"
@@ -17,8 +17,7 @@ namespace {
 // single environment.
 class Script {
  public:
-  explicit Script(std::string_view text)
-      : document_(Document::from_text(text)) {
+  explicit Script(std::string_view text) : document_(Document::from_text(text)) {
     results_.refresh(document_);
   }
 
@@ -52,8 +51,8 @@ ErrorCode single_line_code(std::string_view line) {
 // ------------------------------------------------------------------ name rules
 
 TEST_CASE("valid names are accepted") {
-  for (std::string_view name : {"x", "y", "test", "helloWorld", "xOne", "xTwo",
-                                "_x", "under_score", "TEST", "TEST_ONE", "PI"}) {
+  for (std::string_view name : {"x", "y", "test", "helloWorld", "xOne", "xTwo", "_x",
+                                "under_score", "TEST", "TEST_ONE", "PI"}) {
     CAPTURE(name);
     const std::string line = std::string(name) + " = 2";
     const LineEval outcome = evaluate_line(line);
@@ -272,8 +271,8 @@ TEST_CASE("a definition stays quiet when the value was typed literally") {
   // Nothing is gained by restating a number that is already on the line, and
   // reformatting 128.40 to 128.4 next to it would be worse than nothing.
   // Redundant parentheses fold away, so those count as literal too.
-  for (std::string_view line : {"x = 5", "x = 128.40", "x = -5", "x = 1e3",
-                                "x = (5)", "x = -(5)"}) {
+  for (std::string_view line :
+       {"x = 5", "x = 128.40", "x = -5", "x = 1e3", "x = (5)", "x = -(5)"}) {
     CAPTURE(line);
     const Script script(line);
     CHECK_FALSE(script.line(0).show_result);
@@ -283,8 +282,8 @@ TEST_CASE("a definition stays quiet when the value was typed literally") {
 }
 
 TEST_CASE("a computed value is shown") {
-  for (std::string_view line : {"x = 1 + 1", "x = sqrt(4)", "x = 2 * 3",
-                                "x = PI", "x = -(1 + 1)"}) {
+  for (std::string_view line :
+       {"x = 1 + 1", "x = sqrt(4)", "x = 2 * 3", "x = PI", "x = -(1 + 1)"}) {
     CAPTURE(line);
     const Script script(line);
     CHECK(script.line(0).show_result);

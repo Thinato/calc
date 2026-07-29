@@ -1,7 +1,7 @@
-#include <doctest/doctest.h>
-
 #include <string>
 #include <string_view>
+
+#include <doctest/doctest.h>
 
 #include "core/engine.hpp"
 
@@ -48,9 +48,7 @@ TEST_CASE("precedence and associativity") {
   SUBCASE("power binds tighter than multiplication") {
     CHECK(shown("2 * 3 ^ 2") == "18");
   }
-  SUBCASE("power is right associative") {
-    CHECK(shown("2 ^ 3 ^ 2") == "512");
-  }
+  SUBCASE("power is right associative") { CHECK(shown("2 ^ 3 ^ 2") == "512"); }
   SUBCASE("addition and subtraction are left associative") {
     CHECK(shown("1 - 2 - 3") == "-4");
     CHECK(shown("100 / 10 / 2") == "5");

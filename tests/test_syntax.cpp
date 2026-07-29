@@ -1,7 +1,7 @@
-#include <doctest/doctest.h>
-
 #include <string>
 #include <string_view>
+
+#include <doctest/doctest.h>
 
 #include "core/syntax.hpp"
 

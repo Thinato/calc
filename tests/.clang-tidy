@@ -1,0 +1,18 @@
+---
+# The root config, minus one check that does not fit test code.
+InheritParentConfig: true
+
+Checks: >
+  -bugprone-unchecked-optional-access
+
+# A test asserts a thing exists and then reads it:
+#
+#   REQUIRE(outcome.assigned_name.has_value());
+#   CHECK(*outcome.assigned_name == "x");
+#
+# The guard is a doctest macro, which the check cannot see through, so all 13
+# instances are false positives. Suppressing them one by one would bury what the
+# tests actually say — and if the assumption is ever wrong, the REQUIRE above fails
+# and names the line, which is the whole point of writing it that way.
+#
+# The check stays on for src/, where a failed guess crashes instead.

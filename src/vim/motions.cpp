@@ -123,8 +123,7 @@ std::optional<std::size_t> find_forward(std::string_view line, std::size_t from,
                                         std::string_view needle, int count) {
   std::size_t position = from;
   for (int step = 0; step < count; ++step) {
-    const std::size_t found =
-        line.find(needle, utf8::next_boundary(line, position));
+    const std::size_t found = line.find(needle, utf8::next_boundary(line, position));
     if (found == std::string_view::npos) return std::nullopt;
     position = found;
   }
@@ -228,8 +227,7 @@ std::size_t first_non_blank(const Document& document, std::size_t row) {
   return found == std::string::npos ? 0 : found;
 }
 
-Cursor end_of_current_word(const Document& document, Cursor from, int count,
-                           bool big) {
+Cursor end_of_current_word(const Document& document, Cursor from, int count, bool big) {
   Cursor position = from;
   for (int step = 0; step < std::max(count, 1); ++step) {
     if (step > 0) {
@@ -254,20 +252,34 @@ bool motion_needs_argument(char key) {
 
 bool is_motion(char key) {
   switch (key) {
-    case 'h': case 'l': case 'j': case 'k':
-    case '0': case '^': case '$': case '|':
-    case 'w': case 'W': case 'b': case 'B': case 'e': case 'E':
-    case 'G': case 'f': case 'F': case 't': case 'T':
-    case '%': case '{': case '}':
-      return true;
-    default:
-      return false;
+    case 'h':
+    case 'l':
+    case 'j':
+    case 'k':
+    case '0':
+    case '^':
+    case '$':
+    case '|':
+    case 'w':
+    case 'W':
+    case 'b':
+    case 'B':
+    case 'e':
+    case 'E':
+    case 'G':
+    case 'f':
+    case 'F':
+    case 't':
+    case 'T':
+    case '%':
+    case '{':
+    case '}': return true;
+    default: return false;
   }
 }
 
-MotionResult apply_motion(const Document& document, Cursor from, char key,
-                          int count, const std::string& argument,
-                          bool for_operator) {
+MotionResult apply_motion(const Document& document, Cursor from, char key, int count,
+                          const std::string& argument, bool for_operator) {
   MotionResult result;
   result.target = from;
   // `count` arrives as 0 when the user typed no count. Most motions just repeat,
@@ -298,8 +310,8 @@ MotionResult apply_motion(const Document& document, Cursor from, char key,
     }
     case 'j': {
       if (from.row == document.last_row()) break;
-      result.target.row = std::min(from.row + static_cast<std::size_t>(repeat),
-                                   document.last_row());
+      result.target.row =
+          std::min(from.row + static_cast<std::size_t>(repeat), document.last_row());
       result.kind = MotionKind::Linewise;
       result.valid = true;
       break;
@@ -322,8 +334,8 @@ MotionResult apply_motion(const Document& document, Cursor from, char key,
       result.valid = true;
       break;
     case '$': {
-      const std::size_t row = std::min(
-          from.row + static_cast<std::size_t>(repeat) - 1, document.last_row());
+      const std::size_t row =
+          std::min(from.row + static_cast<std::size_t>(repeat) - 1, document.last_row());
       const std::size_t length = document.line_length(row);
       result.target.row = row;
       // Target the last character; an inclusive range then reaches the line
@@ -405,8 +417,8 @@ MotionResult apply_motion(const Document& document, Cursor from, char key,
       if (key == 't') column = utf8::prev_boundary(text, column);
       if (key == 'T') column = utf8::next_boundary(text, column);
       result.target.column = column;
-      result.kind = forward ? MotionKind::CharwiseInclusive
-                            : MotionKind::CharwiseExclusive;
+      result.kind =
+          forward ? MotionKind::CharwiseInclusive : MotionKind::CharwiseExclusive;
       result.valid = true;
       break;
     }
@@ -430,8 +442,7 @@ MotionResult apply_motion(const Document& document, Cursor from, char key,
       result.valid = true;
       break;
     }
-    default:
-      break;
+    default: break;
   }
   return result;
 }

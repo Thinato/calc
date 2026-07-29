@@ -7,6 +7,10 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 option(CALC_SANITIZE "Build with AddressSanitizer + UndefinedBehaviorSanitizer" OFF)
 option(CALC_BUILD_TESTS "Build the test suite" ON)
+# Off by default: a warning should stop CI, not stop someone mid-edit on their own
+# machine. Deliberately not CMAKE_COMPILE_WARNING_AS_ERROR, which is global and
+# would also hold FTXUI to a standard this project does not set for it.
+option(CALC_WERROR "Treat compiler warnings as errors (CI uses this)" OFF)
 
 # What `calc --version` reports. The release workflow passes the tag it is
 # building, so a downloaded binary can say which release it came from; a local
@@ -18,6 +22,13 @@ target_compile_options(calc_warnings INTERFACE
   $<$<CXX_COMPILER_ID:GNU,Clang,AppleClang>:-Wall -Wextra -Wpedantic>
   $<$<CXX_COMPILER_ID:MSVC>:/W4>
 )
+if(CALC_WERROR)
+  # Only this target's users, which is only this project's own code.
+  target_compile_options(calc_warnings INTERFACE
+    $<$<CXX_COMPILER_ID:GNU,Clang,AppleClang>:-Werror>
+    $<$<CXX_COMPILER_ID:MSVC>:/WX>
+  )
+endif()
 if(CALC_SANITIZE)
   target_compile_options(calc_warnings INTERFACE -fsanitize=address,undefined -fno-omit-frame-pointer)
   target_link_options(calc_warnings INTERFACE -fsanitize=address,undefined)

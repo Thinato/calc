@@ -1,0 +1,29 @@
+---
+# Google's style, with two deviations that match how this codebase already reads.
+#
+# Pinned tool version: clang-format 22.1.8 (see .github/workflows/ci.yml). Layout
+# differs between major versions, so a different one will disagree with CI.
+BasedOnStyle: Google
+
+# 90 rather than 80. The names here are deliberately long — `styling.selection_begin`,
+# `document_.line_length(row)` — and at 80 the wrapping obscured more than the
+# narrower measure bought.
+ColumnLimit: 90
+
+# The switches in src/vim/ and src/core/ are dispatch tables: one line per case
+# reads as a table, where three lines per case reads as prose.
+#
+#   case 'd': return Operator::Delete;
+#   case 'c': return Operator::Change;
+AllowShortCaseLabelsOnASingleLine: true
+
+# Three blocks of includes: the standard library, then what was fetched, then this
+# project. Google's default sorts <ftxui/...> in with <algorithm>, which loses the
+# one grouping that says at a glance what a file depends on.
+IncludeCategories:
+  - Regex: '^<(ftxui|doctest)/'
+    Priority: 2
+  - Regex: '^<'
+    Priority: 1
+  - Regex: '.*'
+    Priority: 3

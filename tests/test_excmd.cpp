@@ -1,11 +1,10 @@
-#include <doctest/doctest.h>
-
 #include <filesystem>
 #include <fstream>
 #include <sstream>
 #include <string>
-
 #include <vector>
+
+#include <doctest/doctest.h>
 
 #include "doc/file.hpp"
 #include "doc/results.hpp"
@@ -20,7 +19,7 @@ namespace {
 // A scratch path that cleans itself up, so the suite leaves no files behind.
 class TempFile {
  public:
-  explicit TempFile(std::string name)
+  explicit TempFile(const std::string& name)
       : path_((std::filesystem::temp_directory_path() / name).string()) {
     remove();
   }
@@ -253,8 +252,7 @@ TEST_CASE("an engine with no opener wired up still survives :github") {
 }
 
 TEST_CASE("reading a directory fails cleanly") {
-  const ReadOutcome outcome =
-      read_file(std::filesystem::temp_directory_path().string());
+  const ReadOutcome outcome = read_file(std::filesystem::temp_directory_path().string());
   CHECK_FALSE(outcome.ok);
   CHECK_FALSE(outcome.error.empty());
 }

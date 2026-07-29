@@ -67,8 +67,8 @@ class Parser {
       Result<NodePtr> rhs = parse_expression(next_min);
       if (!rhs) return rhs.error();
 
-      lhs = make_node<Binary>(info->op, std::move(lhs.value()),
-                              std::move(rhs.value()), column);
+      lhs = make_node<Binary>(info->op, std::move(lhs.value()), std::move(rhs.value()),
+                              column);
     }
     return lhs;
   }
@@ -127,13 +127,11 @@ class Parser {
     const FunctionDef* definition = find_function(name_token.text);
     if (definition == nullptr) {
       return make_error(ErrorCode::UnknownFunction,
-                        "unknown function '" + name_token.text + "'",
-                        name_token.column);
+                        "unknown function '" + name_token.text + "'", name_token.column);
     }
     if (peek().kind != TokenKind::LParen) {
       return make_error(ErrorCode::ExpectedCallParen,
-                        "expected '(' after '" + name_token.text + "'",
-                        peek().column);
+                        "expected '(' after '" + name_token.text + "'", peek().column);
     }
     const std::size_t open_column = advance().column;
 

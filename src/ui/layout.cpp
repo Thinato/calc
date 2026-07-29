@@ -35,20 +35,15 @@ enum class CellStyle { Plain, Comment, Function, Variable, Constant, Selected, C
 Element style_run(const std::string& run, CellStyle style, Mode mode) {
   Element element = text(run);
   switch (style) {
-    case CellStyle::Plain:
-      return element;
-    case CellStyle::Comment:
-      return element | color(theme::comment());
+    case CellStyle::Plain: return element;
+    case CellStyle::Comment: return element | color(theme::comment());
     case CellStyle::Function:
       // No bold: weight is how a constant and the two overlays stand out, and
       // spending it here would leave nothing to stand out against.
       return element | color(theme::function());
-    case CellStyle::Variable:
-      return element | color(theme::variable());
-    case CellStyle::Constant:
-      return element | color(theme::constant()) | bold;
-    case CellStyle::Selected:
-      return element | inverted;
+    case CellStyle::Variable: return element | color(theme::variable());
+    case CellStyle::Constant: return element | color(theme::constant()) | bold;
+    case CellStyle::Selected: return element | inverted;
     case CellStyle::Cursor:
       // The bar shape in insert mode sits between characters; the block sits on
       // one. focusCursor* also parks the terminal's real cursor here so the two
@@ -102,7 +97,7 @@ Elements styled_line(const std::string& text_line, const LineStyling& styling) {
     while (span < styling.syntax.size() && styling.syntax[span].end <= index) ++span;
     if (span < styling.syntax.size() && index >= styling.syntax[span].begin) {
       style = styling.syntax[span].kind == SyntaxKind::Comment ? CellStyle::Comment
-                                                              : CellStyle::Function;
+                                                               : CellStyle::Function;
     }
     if (index >= styling.name_begin && index < styling.name_end) {
       style = styling.name_is_constant ? CellStyle::Constant : CellStyle::Variable;
@@ -155,8 +150,7 @@ std::string gutter_text(std::size_t row, std::size_t width) {
 // on the buffer's contents any more.
 Element message_line(const VimEngine& engine) {
   if (engine.mode() == Mode::CommandLine) {
-    return hbox({text(engine.command_line()),
-                 text(" ") | inverted | focusCursorBar});
+    return hbox({text(engine.command_line()), text(" ") | inverted | focusCursorBar});
   }
   if (!engine.message().empty()) {
     return text(engine.message()) |
@@ -167,11 +161,11 @@ Element message_line(const VimEngine& engine) {
 
 Element status_line(const Document& document, const VimEngine& engine) {
   const std::string name = document.path().empty() ? "[no name]" : document.path();
-  const std::string position = std::to_string(document.cursor().row + 1) + ":" +
-                               std::to_string(utf8::chars_before(
-                                                  document.line(document.cursor().row),
-                                                  document.cursor().column) +
-                                              1);
+  const std::string position =
+      std::to_string(document.cursor().row + 1) + ":" +
+      std::to_string(utf8::chars_before(document.line(document.cursor().row),
+                                        document.cursor().column) +
+                     1);
 
   Elements left;
   left.push_back(text(" " + std::string(mode_name(engine.mode())) + " ") |
@@ -217,15 +211,14 @@ void apply_scroll(Viewport& viewport, ScrollRequest request, Document& document)
   const Cursor cursor = document.cursor();
 
   switch (request) {
-    case ScrollRequest::None:
-      return;
+    case ScrollRequest::None: return;
     case ScrollRequest::HalfPageDown:
-      document.set_cursor(Cursor{std::min(cursor.row + half, document.last_row()),
-                                 cursor.column});
+      document.set_cursor(
+          Cursor{std::min(cursor.row + half, document.last_row()), cursor.column});
       return;
     case ScrollRequest::HalfPageUp:
-      document.set_cursor(Cursor{cursor.row >= half ? cursor.row - half : 0,
-                                 cursor.column});
+      document.set_cursor(
+          Cursor{cursor.row >= half ? cursor.row - half : 0, cursor.column});
       return;
     case ScrollRequest::LineDown:
       viewport.top_row = std::min(viewport.top_row + 1, document.last_row());
@@ -236,13 +229,10 @@ void apply_scroll(Viewport& viewport, ScrollRequest request, Document& document)
     case ScrollRequest::Center:
       viewport.top_row = cursor.row >= half ? cursor.row - half : 0;
       return;
-    case ScrollRequest::Top:
-      viewport.top_row = cursor.row;
-      return;
+    case ScrollRequest::Top: viewport.top_row = cursor.row; return;
     case ScrollRequest::Bottom:
-      viewport.top_row = cursor.row + 1 >= viewport.height
-                             ? cursor.row + 1 - viewport.height
-                             : 0;
+      viewport.top_row =
+          cursor.row + 1 >= viewport.height ? cursor.row + 1 - viewport.height : 0;
       return;
   }
 }
@@ -269,8 +259,9 @@ ftxui::Element render_frame(const Document& document, const ResultCache& results
 
     Elements spans;
     if (engine.line_numbers()) {
-      spans.push_back(text(gutter_text(row, gutter_width)) |
-                      color(row == cursor.row ? theme::gutter_current() : theme::gutter()));
+      spans.push_back(
+          text(gutter_text(row, gutter_width)) |
+          color(row == cursor.row ? theme::gutter_current() : theme::gutter()));
     }
 
     const LineEval& eval = results.at(row);
@@ -291,18 +282,20 @@ ftxui::Element render_frame(const Document& document, const ResultCache& results
       } else {
         styling.selection_begin =
             row == selection->first.row ? selection->first.column : 0;
-        const std::size_t last = row == selection->second.row
-                                     ? selection->second.column
-                                     : document.line_length(row);
+        const std::size_t last = row == selection->second.row ? selection->second.column
+                                                              : document.line_length(row);
         styling.selection_end = row == selection->second.row
                                     ? utf8::next_boundary(document.line(row), last)
                                     : last;
       }
     }
 
-    if (eval.is_assignment()) {
+    // Bound in the condition so the check and the use are visibly the same
+    // optional; going through eval.is_assignment() reads well but hides that from
+    // an analyser, which then cannot tell this dereference is guarded.
+    if (const std::optional<std::string>& name = eval.assigned_name; name.has_value()) {
       styling.name_begin = eval.assigned_column;
-      styling.name_end = eval.assigned_column + eval.assigned_name->size();
+      styling.name_end = eval.assigned_column + name->size();
       styling.name_is_constant = eval.assigned_constant;
     }
 
@@ -336,8 +329,7 @@ ftxui::Element render_frame(const Document& document, const ResultCache& results
       // the expression keeps its width and a clipped message stays obviously
       // clipped. Deliberately not applied to a result: a truncated number would
       // read as a wrong answer rather than a partial one.
-      spans.push_back(text(eval.error->message) | color(theme::error()) |
-                      xflex_shrink);
+      spans.push_back(text(eval.error->message) | color(theme::error()) | xflex_shrink);
     }
 
     rows.push_back(hbox(std::move(spans)));

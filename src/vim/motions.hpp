@@ -33,9 +33,8 @@ bool is_motion(char key);
 // Runs a motion. `count` is at least 1. `argument` is the character typed after
 // f/F/t/T and is otherwise ignored. `for_operator` selects vim's operator-
 // pending behaviour where it differs from plain cursor movement.
-MotionResult apply_motion(const Document& document, Cursor from, char key,
-                          int count, const std::string& argument,
-                          bool for_operator);
+MotionResult apply_motion(const Document& document, Cursor from, char key, int count,
+                          const std::string& argument, bool for_operator);
 
 // Column of the first non-blank character, or 0 for a blank line.
 std::size_t first_non_blank(const Document& document, std::size_t row);
