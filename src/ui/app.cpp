@@ -57,7 +57,9 @@ void copy_to_clipboard(const std::string& text) {
 #endif
   if (command == nullptr) return;
 
-  // NOLINTNEXTLINE(cert-env33-c) - a fixed command with no interpolated input
+  // A fixed command with no interpolated input. The directive has to be the line
+  // immediately above the call, so the reasoning goes here and it goes last.
+  // NOLINTNEXTLINE(cert-env33-c,bugprone-command-processor)
   FILE* pipe = popen(command, "w");
   if (pipe == nullptr) return;
   std::fwrite(text.data(), 1, text.size(), pipe);
@@ -72,8 +74,8 @@ bool is_safe_url(const std::string& url) {
   if (url.rfind("https://", 0) != 0) return false;
   return std::all_of(url.begin(), url.end(), [](char byte) {
     return (byte >= 'a' && byte <= 'z') || (byte >= 'A' && byte <= 'Z') ||
-           (byte >= '0' && byte <= '9') || byte == ':' || byte == '/' ||
-           byte == '.' || byte == '-' || byte == '_';
+           (byte >= '0' && byte <= '9') || byte == ':' || byte == '/' || byte == '.' ||
+           byte == '-' || byte == '_';
   });
 }
 
@@ -92,7 +94,8 @@ void open_in_browser(const std::string& url) {
   // the browser it launched, which would freeze the editor until it returned.
   const std::string command = std::string(opener) + " '" + url + "' >/dev/null 2>&1 &";
 
-  // NOLINTNEXTLINE(cert-env33-c) - the URL is validated above and quoted here
+  // The URL is validated by is_safe_url above and single-quoted here.
+  // NOLINTNEXTLINE(cert-env33-c,bugprone-command-processor)
   FILE* pipe = popen(command.c_str(), "r");
   if (pipe != nullptr) pclose(pipe);
 }

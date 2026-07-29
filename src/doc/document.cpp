@@ -63,19 +63,16 @@ const std::string& Document::line(std::size_t row) const {
   return lines_[std::min(row, last_row())];
 }
 
-std::size_t Document::line_length(std::size_t row) const {
-  return line(row).size();
-}
+std::size_t Document::line_length(std::size_t row) const { return line(row).size(); }
 
-bool Document::empty() const {
-  return lines_.size() == 1 && lines_[0].empty();
-}
+bool Document::empty() const { return lines_.size() == 1 && lines_[0].empty(); }
 
 Cursor Document::clamped(Cursor cursor, bool allow_past_end) const {
   cursor.row = std::min(cursor.row, last_row());
   const std::size_t length = line_length(cursor.row);
-  const std::size_t limit =
-      allow_past_end || length == 0 ? length : utf8::prev_boundary(line(cursor.row), length);
+  const std::size_t limit = allow_past_end || length == 0
+                                ? length
+                                : utf8::prev_boundary(line(cursor.row), length);
   cursor.column = std::min(cursor.column, limit);
   // Never leave a column in the middle of a multi-byte character.
   const std::string& text = line(cursor.row);
@@ -101,7 +98,8 @@ std::string Document::text_range(Cursor from, Cursor to) const {
     return text.substr(begin, end - begin);
   }
 
-  std::string result = line(from.row).substr(std::min(from.column, line_length(from.row)));
+  std::string result =
+      line(from.row).substr(std::min(from.column, line_length(from.row)));
   result += '\n';
   for (std::size_t row = from.row + 1; row < to.row; ++row) {
     result += line(row);
@@ -153,8 +151,8 @@ Cursor Document::insert_text_multiline(Cursor at, std::string_view text) {
   std::size_t start = first_newline + 1;
   while (true) {
     const std::size_t newline = text.find('\n', start);
-    const std::string_view segment =
-        newline == std::string_view::npos ? text.substr(start)
+    const std::string_view segment = newline == std::string_view::npos
+                                         ? text.substr(start)
                                          : text.substr(start, newline - start);
     ++row;
     lines_.insert(lines_.begin() + static_cast<std::ptrdiff_t>(row),
@@ -182,8 +180,8 @@ std::string Document::erase_range(Cursor from, Cursor to) {
     return removed;
   }
 
-  lines_[from.row] = lines_[from.row].substr(0, from.column) +
-                     lines_[to.row].substr(to.column);
+  lines_[from.row] =
+      lines_[from.row].substr(0, from.column) + lines_[to.row].substr(to.column);
   lines_.erase(lines_.begin() + static_cast<std::ptrdiff_t>(from.row) + 1,
                lines_.begin() + static_cast<std::ptrdiff_t>(to.row) + 1);
   return removed;
@@ -207,8 +205,8 @@ void Document::insert_lines(std::size_t before_row,
   if (text.empty()) return;
   touch();
   before_row = std::min(before_row, lines_.size());
-  lines_.insert(lines_.begin() + static_cast<std::ptrdiff_t>(before_row),
-                text.begin(), text.end());
+  lines_.insert(lines_.begin() + static_cast<std::ptrdiff_t>(before_row), text.begin(),
+                text.end());
 }
 
 void Document::replace_line(std::size_t row, std::string text) {

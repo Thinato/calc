@@ -164,7 +164,8 @@ char VimEngine::char_under_cursor() const {
 }
 
 void VimEngine::clamp_cursor_for_mode() {
-  document_.set_cursor(document_.clamped(document_.cursor(), allows_cursor_past_end(mode_)));
+  document_.set_cursor(
+      document_.clamped(document_.cursor(), allows_cursor_past_end(mode_)));
 }
 
 // ------------------------------------------------------------------ registers
@@ -247,9 +248,7 @@ bool VimEngine::handle_g_prefix(const Key& key) {
       yank_result(true);
       reset_pending();
       return true;
-    default:
-      reset_pending();
-      return true;
+    default: reset_pending(); return true;
   }
 }
 
@@ -351,8 +350,8 @@ void VimEngine::feed_normal(const Key& key) {
         Range range;
         range.linewise = true;
         range.first_row = first;
-        range.row_count = std::min(static_cast<std::size_t>(lines),
-                                   document_.line_count() - first);
+        range.row_count =
+            std::min(static_cast<std::size_t>(lines), document_.line_count() - first);
         apply_operator(range);
         reset_pending();
         return;
@@ -384,9 +383,7 @@ void VimEngine::feed_normal(const Key& key) {
 
   const int count = effective_count();
   switch (command) {
-    case 'i':
-      enter_insert();
-      break;
+    case 'i': enter_insert(); break;
     case 'I':
       document_.set_cursor(Cursor{document_.cursor().row,
                                   first_non_blank(document_, document_.cursor().row)});
@@ -402,8 +399,8 @@ void VimEngine::feed_normal(const Key& key) {
       break;
     }
     case 'A':
-      document_.set_cursor(Cursor{document_.cursor().row,
-                                  document_.line_length(document_.cursor().row)});
+      document_.set_cursor(
+          Cursor{document_.cursor().row, document_.line_length(document_.cursor().row)});
       enter_insert();
       break;
     case 'o': {
@@ -483,9 +480,7 @@ void VimEngine::feed_normal(const Key& key) {
       clamp_cursor_for_mode();
       reset_pending();
       break;
-    case 'r':
-      awaiting_argument_ = 'r';
-      break;
+    case 'r': awaiting_argument_ = 'r'; break;
     case '~': {
       const Cursor from = document_.cursor();
       const MotionResult motion = apply_motion(document_, from, 'l', count, "", true);
@@ -508,9 +503,7 @@ void VimEngine::feed_normal(const Key& key) {
       enter_visual(Mode::VisualLine);
       reset_pending();
       break;
-    case '.':
-      repeat_last_change();
-      break;
+    case '.': repeat_last_change(); break;
     case ':':
     case '/':
     case '?':
@@ -527,9 +520,7 @@ void VimEngine::feed_normal(const Key& key) {
       search_next(!last_search_forward_);
       reset_pending();
       break;
-    default:
-      reset_pending();
-      break;
+    default: reset_pending(); break;
   }
 }
 
@@ -564,8 +555,8 @@ void VimEngine::execute_motion(char key, const std::string& argument) {
     }
   }
 
-  const MotionResult motion = apply_motion(document_, start, key, count, argument,
-                                           operator_ != Operator::None);
+  const MotionResult motion =
+      apply_motion(document_, start, key, count, argument, operator_ != Operator::None);
   if (!motion.valid) {
     reset_pending();
     return;
@@ -655,8 +646,7 @@ void VimEngine::apply_operator(const Range& range) {
       enter_insert();
       break;
     }
-    case Operator::None:
-      break;
+    case Operator::None: break;
   }
 }
 
@@ -694,9 +684,7 @@ void VimEngine::enter_visual(Mode visual_mode) {
 
 void VimEngine::feed_insert(const Key& key) {
   switch (key.type) {
-    case Key::Type::Escape:
-      leave_insert();
-      return;
+    case Key::Type::Escape: leave_insert(); return;
     case Key::Type::Enter: {
       const Cursor cursor = document_.cursor();
       document_.split_line(cursor);
@@ -744,11 +732,8 @@ void VimEngine::feed_insert(const Key& key) {
     case Key::Type::Up:
     case Key::Type::Down:
     case Key::Type::Home:
-    case Key::Type::End:
-      handle_shared_navigation(key);
-      return;
-    default:
-      return;
+    case Key::Type::End: handle_shared_navigation(key); return;
+    default: return;
   }
 }
 
@@ -802,26 +787,14 @@ void VimEngine::feed_visual(const Key& key) {
       reset_pending();
       return;
     }
-    case '"':
-      awaiting_register_ = true;
-      return;
-    case 'g':
-      pending_g_ = true;
-      return;
-    case 'z':
-      pending_z_ = true;
-      return;
+    case '"': awaiting_register_ = true; return;
+    case 'g': pending_g_ = true; return;
+    case 'z': pending_z_ = true; return;
     case 'd':
-    case 'x':
-      apply_visual_operator(Operator::Delete);
-      return;
-    case 'y':
-      apply_visual_operator(Operator::Yank);
-      return;
+    case 'x': apply_visual_operator(Operator::Delete); return;
+    case 'y': apply_visual_operator(Operator::Yank); return;
     case 'c':
-    case 's':
-      apply_visual_operator(Operator::Change);
-      return;
+    case 's': apply_visual_operator(Operator::Change); return;
     case '~': {
       const auto span = selection();
       if (!span) return;
@@ -841,8 +814,7 @@ void VimEngine::feed_visual(const Key& key) {
       mode_ = Mode::CommandLine;
       reset_pending();
       return;
-    default:
-      break;
+    default: break;
   }
 
   if (motion_needs_argument(command)) {
@@ -906,11 +878,8 @@ void VimEngine::feed_command_line(const Key& key) {
       }
       command_line_.erase(utf8::prev_boundary(command_line_, command_line_.size()));
       return;
-    case Key::Type::Character:
-      command_line_ += key.text;
-      return;
-    default:
-      return;
+    case Key::Type::Character: command_line_ += key.text; return;
+    default: return;
   }
 }
 
@@ -956,8 +925,8 @@ bool VimEngine::search_next(bool forward) {
 
   // Walk the buffer from just past the cursor, wrapping once.
   for (std::size_t step = 0; step <= rows; ++step) {
-    const std::size_t row = forward ? (start.row + step) % rows
-                                    : (start.row + rows - step % rows) % rows;
+    const std::size_t row =
+        forward ? (start.row + step) % rows : (start.row + rows - step % rows) % rows;
     const std::string& text = document_.line(row);
     std::size_t found = std::string::npos;
 
@@ -1037,8 +1006,8 @@ void VimEngine::replace_char(const std::string& replacement) {
   document_.begin_change();
   document_.erase_range(cursor, Cursor{cursor.row, end});
   document_.insert_text(cursor, repeat(replacement, count));
-  document_.set_cursor(
-      Cursor{cursor.row, cursor.column + replacement.size() * static_cast<std::size_t>(count)});
+  document_.set_cursor(Cursor{
+      cursor.row, cursor.column + replacement.size() * static_cast<std::size_t>(count)});
   document_.commit_change();
   // The cursor rests on the last replaced character.
   Cursor rest = document_.cursor();
@@ -1053,8 +1022,9 @@ void VimEngine::toggle_case_range(Cursor from, Cursor to) {
   if (to < from) std::swap(from, to);
   for (std::size_t row = from.row; row <= to.row && row < document_.line_count(); ++row) {
     const std::size_t begin = row == from.row ? from.column : 0;
-    const std::size_t end = row == to.row ? std::min(to.column, document_.line_length(row))
-                                        : document_.line_length(row);
+    const std::size_t end = row == to.row
+                                ? std::min(to.column, document_.line_length(row))
+                                : document_.line_length(row);
     if (begin >= end) continue;
     std::string text = document_.line(row);
     const std::string flipped = toggle_case(text.substr(begin, end - begin));

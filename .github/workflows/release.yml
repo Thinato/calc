@@ -1,0 +1,86 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: ${{ matrix.target }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Linux builds run on the oldest image still supported: a binary linked
+          # against glibc runs on that release and newer, never older, so the
+          # image choice is the compatibility floor.
+          - target: x86_64-unknown-linux-gnu
+            os: ubuntu-22.04
+            cmake_args: -DCMAKE_EXE_LINKER_FLAGS="-static-libstdc++ -static-libgcc"
+          - target: aarch64-unknown-linux-gnu
+            os: ubuntu-22.04-arm
+            cmake_args: -DCMAKE_EXE_LINKER_FLAGS="-static-libstdc++ -static-libgcc"
+          - target: aarch64-apple-darwin
+            os: macos-14
+            cmake_args: -DCMAKE_OSX_DEPLOYMENT_TARGET=11.0
+          - target: x86_64-apple-darwin
+            os: macos-13
+            cmake_args: -DCMAKE_OSX_DEPLOYMENT_TARGET=11.0
+    steps:
+      - uses: actions/checkout@v4
+
+      # No preset here: the presets are for working locally, and a release wants
+      # Release rather than RelWithDebInfo plus the flags above. Configuring
+      # directly also means no Ninja to install — FTXUI and doctest are still
+      # fetched by CMake, so nothing else needs installing either.
+      - name: Configure
+        run: >
+          cmake -B build
+          -DCMAKE_BUILD_TYPE=Release
+          -DCALC_VERSION="${GITHUB_REF_NAME#v}"
+          ${{ matrix.cmake_args }}
+
+      - name: Build
+        run: cmake --build build --parallel
+
+      # The suite needs no terminal, so it gates the release: a tag that cannot
+      # pass its own tests should not become a download.
+      - name: Test
+        run: ctest --test-dir build --output-on-failure
+
+      - name: Check the binary reports the tag it was built from
+        run: |
+          expected="calc ${GITHUB_REF_NAME#v}"
+          got="$(./build/calc --version)"
+          [ "$got" = "$expected" ] || {
+            printf 'version mismatch: built %s, expected %s\n' "$got" "$expected" >&2
+            exit 1
+          }
+
+      # Linux only. On macOS the linker ad-hoc signs the binary, and stripping it
+      # afterwards invalidates that signature, which gets the download killed on
+      # sight on Apple Silicon. The few kilobytes are not worth it.
+      - name: Strip
+        if: runner.os == 'Linux'
+        run: strip build/calc
+
+      - name: Package tarball
+        id: pkg
+        run: |
+          name="calc-${GITHUB_REF_NAME}-${{ matrix.target }}"
+          mkdir -p "dist/${name}"
+          cp build/calc "dist/${name}/"
+          cp README.md "dist/${name}/"
+          tar -C dist -czf "dist/${name}.tar.gz" "${name}"
+          echo "artifact=dist/${name}.tar.gz" >> "$GITHUB_OUTPUT"
+
+      - name: Upload to GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ steps.pkg.outputs.artifact }}
+          fail_on_unmatched_files: true

@@ -52,7 +52,7 @@ TEST_CASE("x and X delete single characters") {
   CHECK(buffer_after("1 + 2", "x") == " + 2");
   CHECK(buffer_after("1 + 2", "3x") == " 2");
   CHECK(buffer_after("1 + 2", "$X") == "1 +2");
-  CHECK(buffer_after("", "x") == "");        // nothing to delete
+  CHECK(buffer_after("", "x") == "");            // nothing to delete
   CHECK(buffer_after("1 + 2", "X") == "1 + 2");  // nothing to the left
 }
 
@@ -139,7 +139,7 @@ TEST_CASE("tilde toggles case and moves on") {
 TEST_CASE("J joins lines with a single space") {
   CHECK(buffer_after("1 +\n2", "J") == "1 + 2");
   CHECK(buffer_after("a\nb\nc", "3J") == "a b c");
-  CHECK(buffer_after("a \nb", "J") == "a b");  // no doubled space
+  CHECK(buffer_after("a \nb", "J") == "a b");    // no doubled space
   CHECK(buffer_after("a\n   b", "J") == "a b");  // leading blanks dropped
 }
 
@@ -196,7 +196,7 @@ TEST_CASE("escape from insert steps the cursor back one character") {
 
 TEST_CASE("visual mode selects and operates") {
   CHECK(buffer_after("1 + 2", "vlld") == " 2");
-  CHECK(buffer_after("1 + 2", "vd") == " + 2");   // one character
+  CHECK(buffer_after("1 + 2", "vd") == " + 2");  // one character
   CHECK(buffer_after("1 + 2", "v$d") == "");
   CHECK(buffer_after("a\nb\nc", "Vjd") == "c");
   CHECK(buffer_after("a\nb\nc", "Vd") == "b\nc");

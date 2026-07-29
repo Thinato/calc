@@ -17,7 +17,7 @@ std::size_t column_after(std::string_view line, std::string_view script) {
 TEST_CASE("hjkl move by one, and stop at the edges") {
   CHECK(column_after("1 + 2", "ll") == 2);
   CHECK(column_after("1 + 2", "llh") == 1);
-  CHECK(column_after("1 + 2", "hhhh") == 0);       // already at the left edge
+  CHECK(column_after("1 + 2", "hhhh") == 0);        // already at the left edge
   CHECK(column_after("1 + 2", "llllllllll") == 4);  // stops on the last char
 
   const auto down = apply("a\nb\nc", "jj");
@@ -78,8 +78,8 @@ TEST_CASE("W treats punctuation as part of the word") {
 
 TEST_CASE("b walks back to the start of a word") {
   // From a character that already starts its word, b steps to the previous one.
-  CHECK(column_after("1 + 2", "$b") == 2);   // '2' -> '+'
-  CHECK(column_after("1 + 2", "$bb") == 0);  // '+' -> '1'
+  CHECK(column_after("1 + 2", "$b") == 2);     // '2' -> '+'
+  CHECK(column_after("1 + 2", "$bb") == 0);    // '+' -> '1'
   CHECK(column_after("sqrt(16)", "$b") == 5);  // ')' -> start of "16"
   CHECK(column_after("abc def", "$b") == 4);   // 'f' -> start of "def"
 }

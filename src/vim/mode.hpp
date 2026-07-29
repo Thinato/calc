@@ -21,8 +21,6 @@ inline std::string_view mode_name(Mode mode) {
 // last character; everywhere else it sits on a character. Either way it can
 // never pass the end of the typed expression, which is what keeps the result
 // column unreachable.
-inline bool allows_cursor_past_end(Mode mode) {
-  return mode == Mode::Insert;
-}
+inline bool allows_cursor_past_end(Mode mode) { return mode == Mode::Insert; }
 
 }  // namespace calc

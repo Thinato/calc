@@ -38,8 +38,8 @@ class Environment {
   // when it is a constant that already exists. On failure the existing binding
   // is left untouched, so lines below a rejected reassignment still see the
   // value the constant was first given.
-  std::optional<Error> define(const std::string& name, Value value,
-                              std::size_t row, std::size_t column);
+  std::optional<Error> define(const std::string& name, Value value, std::size_t row,
+                              std::size_t column);
 
   // True when the name holds no lowercase letter: PI, TAU, TEST_ONE. A name made
   // only of underscores counts as a constant, which is degenerate but harmless.

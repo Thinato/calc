@@ -8,8 +8,7 @@ namespace {
 
 Result<Value> apply_sqrt(const std::vector<Value>& args, std::size_t column) {
   if (args[0] < 0) {
-    return make_error(ErrorCode::DomainError,
-                      "sqrt of a negative number", column);
+    return make_error(ErrorCode::DomainError, "sqrt of a negative number", column);
   }
   return std::sqrt(args[0]);
 }

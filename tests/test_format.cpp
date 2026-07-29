@@ -1,7 +1,7 @@
-#include <doctest/doctest.h>
-
 #include <cmath>
 #include <limits>
+
+#include <doctest/doctest.h>
 
 #include "core/format.hpp"
 

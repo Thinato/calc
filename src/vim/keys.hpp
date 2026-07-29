@@ -29,9 +29,7 @@ struct Key {
   Type type = Type::Unknown;
   std::string text;
 
-  static Key character(std::string text) {
-    return Key{Type::Character, std::move(text)};
-  }
+  static Key character(std::string text) { return Key{Type::Character, std::move(text)}; }
   static Key character(char value) { return Key{Type::Character, std::string(1, value)}; }
   static Key control(char letter) { return Key{Type::Control, std::string(1, letter)}; }
   static Key special(Type type) { return Key{type, {}}; }

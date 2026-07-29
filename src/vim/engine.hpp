@@ -124,9 +124,9 @@ class VimEngine {
   bool line_numbers_ = true;
 
   // Pending-command state. Together these are the whole parser for normal mode.
-  int count_ = 0;              // 0 means the user typed no count
+  int count_ = 0;  // 0 means the user typed no count
   Operator operator_ = Operator::None;
-  char operator_key_ = '\0';   // so a doubled key (dd, yy) is recognizable
+  char operator_key_ = '\0';  // so a doubled key (dd, yy) is recognizable
   int operator_count_ = 0;
   char register_name_ = '\0';
   char awaiting_argument_ = '\0';  // motion or command waiting for one character

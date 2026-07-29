@@ -147,9 +147,9 @@ TEST_CASE("the result cache follows the text it was built from") {
   results.refresh(document);
 
   CHECK(results.at(0).text == "3");
-  CHECK_FALSE(results.at(1).has_result());   // not an expression
+  CHECK_FALSE(results.at(1).has_result());  // not an expression
   CHECK(results.at(1).error.has_value());
-  CHECK_FALSE(results.at(2).has_result());   // blank line
+  CHECK_FALSE(results.at(2).has_result());  // blank line
   CHECK_FALSE(results.at(2).error.has_value());
 
   document.replace_line(0, "2 * 21");

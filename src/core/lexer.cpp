@@ -15,10 +15,10 @@ bool is_digit(char c) { return c >= '0' && c <= '9'; }
 // Builds the diagnostic for a name that cannot exist, quoting the whole span the
 // user typed so the message names the thing they wrote.
 Error invalid_name(std::string_view span, std::size_t column, std::string_view reason) {
-  return make_error(ErrorCode::InvalidName,
-                    "invalid name '" + std::string(span) + "': names cannot " +
-                        std::string(reason),
-                    column);
+  return make_error(
+      ErrorCode::InvalidName,
+      "invalid name '" + std::string(span) + "': names cannot " + std::string(reason),
+      column);
 }
 
 }  // namespace
@@ -98,8 +98,7 @@ Result<std::vector<Token>> tokenize(std::string_view line) {
       if (i < line.size() && is_ident_start(line[i])) {
         std::size_t end = i;
         while (end < line.size() && is_ident_continue(line[end])) ++end;
-        return invalid_name(line.substr(start, end - start), start,
-                            "start with a digit");
+        return invalid_name(line.substr(start, end - start), start, "start with a digit");
       }
 
       const std::string digits(line.substr(start, i - start));

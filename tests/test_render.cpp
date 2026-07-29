@@ -1,8 +1,7 @@
-#include <doctest/doctest.h>
-
 #include <string>
 #include <vector>
 
+#include <doctest/doctest.h>
 #include <ftxui/screen/screen.hpp>
 #include <ftxui/screen/terminal.hpp>
 
@@ -15,21 +14,27 @@ using namespace calc;
 namespace {
 
 // FTXUI decides colour support from TERM and COLORTERM, and downgrades a
-// 256-colour value to its nearest 16-colour index when it doubts the terminal.
-// Pinned here, before any Color is constructed, so that what the colour
-// assertions below see does not depend on whose shell ran ctest.
-struct ColorSupportPin {
-  ColorSupportPin() {
+// 256-colour value to its nearest 16-colour index when it doubts the terminal —
+// so without pinning it, what these assertions see depends on whose shell ran
+// ctest.
+//
+// A function-local static rather than a namespace-scope object: the pin has to be
+// in place before the first Color is *constructed*, and every path that
+// constructs one calls through here first. That holds no matter which argument of
+// a CHECK the compiler chooses to evaluate first.
+void pin_color_support() {
+  static const bool pinned = [] {
     ftxui::Terminal::SetColorSupport(ftxui::Terminal::Palette256);
-  }
-};
-const ColorSupportPin kColorSupportPin;
+    return true;
+  }();
+  (void)pinned;
+}
 
 // Renders a frame to an off-screen buffer. No terminal is involved, which is
 // what makes the layout testable at all.
-std::vector<std::string> render_lines(std::string_view initial,
-                                      std::string_view script, int width = 44,
-                                      int height = 8) {
+std::vector<std::string> render_lines(std::string_view initial, std::string_view script,
+                                      int width = 44, int height = 8) {
+  pin_color_support();
   Document document = Document::from_text(initial);
   ResultCache results;
   VimEngine engine(document, results);
@@ -130,7 +135,15 @@ std::string color_at(const std::vector<std::string>& lines, std::string_view nee
 }
 
 // What the theme asked for, in the form the screen writes it.
-std::string expected(ftxui::Color color) { return color.Print(false); }
+//
+// Takes the theme function rather than a Color: a Color decides its encoding when
+// it is constructed, so accepting one would have it built at the call site —
+// possibly before the pin, since the order in which a CHECK evaluates its two
+// sides is up to the compiler.
+std::string expected(ftxui::Color (*theme_color)()) {
+  pin_color_support();
+  return theme_color().Print(false);
+}
 
 constexpr std::string_view kTerminalDefault = "39";
 
@@ -142,7 +155,8 @@ TEST_CASE("a result is drawn after the expression that produced it") {
 }
 
 TEST_CASE("the frame from the brief renders as specified") {
-  const auto lines = render_lines("1 + 2\nsqrt(16) + pow(2, 10)\n(1 + 2) * 3 ^ 2", "", 60);
+  const auto lines =
+      render_lines("1 + 2\nsqrt(16) + pow(2, 10)\n(1 + 2) * 3 ^ 2", "", 60);
   CHECK(contains(lines, "1 + 2 = 3"));
   CHECK(contains(lines, "sqrt(16) + pow(2, 10) = 1028"));
   CHECK(contains(lines, "(1 + 2) * 3 ^ 2 = 27"));
@@ -237,7 +251,7 @@ TEST_CASE("a line never shows both a result and an error") {
   const auto lines = render_lines("1 / 0\n1 + 2", "j", 60);
   CHECK(contains(lines, "1 / 0  Error: division by zero"));
   CHECK_FALSE(contains(lines, "1 / 0 ="));
-  CHECK(contains(lines, "1 + 2 = 3"));      // and a good line is untouched
+  CHECK(contains(lines, "1 + 2 = 3"));  // and a good line is untouched
   CHECK_FALSE(contains(lines, "1 + 2  Error"));
 }
 
@@ -253,7 +267,7 @@ TEST_CASE("a comment is drawn in the comment colour") {
   // Its '#' included, on a line the cursor is not on, which is prose's ordinary
   // state.
   const auto lines = render_lines("# just a note\n1 + 2", "j");
-  CHECK(color_at(lines, "# just a note") == expected(theme::comment()));
+  CHECK(color_at(lines, "# just a note") == expected(theme::comment));
   // And the expression below it is left in the terminal's own foreground.
   CHECK(color_at(lines, "1 + 2") == kTerminalDefault);
 }
@@ -262,7 +276,7 @@ TEST_CASE("a comment reads as quiet content, not as chrome") {
   // The point of the shade: dimmer than what you typed, but not the same dim as
   // the line numbers, or the eye cannot separate the two.
   const auto lines = render_lines("# just a note\n1 + 2", "j");
-  CHECK(color_at(lines, " 1 ") == expected(theme::gutter()));  // the gutter beside it
+  CHECK(color_at(lines, " 1 ") == expected(theme::gutter));  // the gutter beside it
   CHECK(color_at(lines, "# just a note") != color_at(lines, " 1 "));
   CHECK(color_at(lines, "# just a note") != kTerminalDefault);
 }
@@ -270,8 +284,8 @@ TEST_CASE("a comment reads as quiet content, not as chrome") {
 TEST_CASE("a function name is drawn in the function colour") {
   // The cursor starts on the 's' and would occupy that cell, so it moves away.
   const auto lines = render_lines("sqrt(16) + pow(2, 10)\n1 + 2", "j", 60);
-  CHECK(color_at(lines, "sqrt") == expected(theme::function()));
-  CHECK(color_at(lines, "pow") == expected(theme::function()));
+  CHECK(color_at(lines, "sqrt") == expected(theme::function));
+  CHECK(color_at(lines, "pow") == expected(theme::function));
   // Only the name: the parentheses and the arguments stay plain, so what stands
   // out is the thing being called.
   CHECK(color_at(lines, "(16)") == kTerminalDefault);
@@ -282,13 +296,13 @@ TEST_CASE("a function does not read as its own result") {
   // Light blue against the cyan result. If these matched, `sqrt(16) = 4` would
   // look like the line restating part of itself.
   const auto lines = render_lines("sqrt(16)", "");
-  CHECK(color_at(lines, "4") == expected(theme::result()));
+  CHECK(color_at(lines, "4") == expected(theme::result));
   CHECK(color_at(lines, "sqrt") != color_at(lines, "4"));
 }
 
 TEST_CASE("a function named inside a comment is not coloured as a call") {
   const auto lines = render_lines("# use sqrt for that\n1 + 2", "j", 60);
-  CHECK(color_at(lines, "sqrt") == expected(theme::comment()));
+  CHECK(color_at(lines, "sqrt") == expected(theme::comment));
 }
 
 TEST_CASE("the cursor still shows inside a comment") {
@@ -296,23 +310,23 @@ TEST_CASE("the cursor still shows inside a comment") {
   // matters more than what you are looking at.
   const auto lines = render_lines("# a note", "");
   CHECK(color_at(lines, "#") == kTerminalDefault);  // the cursor cell, inverted
-  CHECK(color_at(lines, " a note") == expected(theme::comment()));
+  CHECK(color_at(lines, " a note") == expected(theme::comment));
 }
 
 TEST_CASE("a definition keeps its own colour beside the new ones") {
   // The cursor moves off the name first, or it would cover the character these
   // look at.
   CHECK(color_at(render_lines("subtotal = 128.40\n1 + 2", "j", 60), "subtotal") ==
-        expected(theme::variable()));
+        expected(theme::variable));
   CHECK(color_at(render_lines("RATE = 0.0825\n1 + 2", "j", 60), "RATE") ==
-        expected(theme::constant()));
+        expected(theme::constant));
 }
 
 TEST_CASE("a function name cannot be redefined, and stays coloured as one") {
   // The colour and the error agree: a function name is not available to define,
   // so it is still a function here rather than a new variable.
   const auto lines = render_lines("sqrt = 5\n1 + 2", "j", 60);
-  CHECK(color_at(lines, "sqrt") == expected(theme::function()));
+  CHECK(color_at(lines, "sqrt") == expected(theme::function));
   CHECK(contains(lines, "Error: 'sqrt' is a function"));
 }
 

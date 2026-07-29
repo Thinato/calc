@@ -18,6 +18,18 @@ its result is shown after it and cannot be edited.
 It behaves like a text editor rather than a prompt: move around, edit any line,
 name values and reuse them, and every result updates as you type.
 
+## Install
+
+```sh
+curl --proto '=https' --tlsv1.2 -sSf \
+  https://raw.githubusercontent.com/Thinato/calc/main/install.sh | sh
+```
+
+The binary lands in `~/.local/bin`. `CALC_INSTALL_DIR` changes where it goes and
+`CALC_VERSION` picks a release other than the latest. Published builds cover Linux
+x86_64 and arm64 (glibc 2.35 or newer) and macOS on Apple Silicon and Intel;
+anything else builds from source in a few seconds.
+
 ## Build
 
 Needs CMake 3.24+ and a C++20 compiler. FTXUI and doctest are fetched
@@ -30,6 +42,27 @@ ctest --test-dir build          # 195 tests, no terminal required
 ./build/calc                    # scratch buffer
 ./build/calc notes.calc         # open a file
 ```
+
+## Checks
+
+CI runs these on every push, and they are the same four commands locally. Both
+clang tools are pinned, because their output changes between major versions:
+
+```sh
+pip install clang-format==22.1.8 clang-tidy==22.1.8
+
+# layout, then defects (-p build reads the compile database the preset exports)
+find src tests \( -name '*.cpp' -o -name '*.hpp' \) | xargs clang-format -i
+find src tests -name '*.cpp' | xargs clang-tidy -p build
+
+# the suite twice: warnings as errors, then again under ASan and UBSan
+cmake --preset default -DCALC_WERROR=ON && cmake --build build && ctest --preset default
+cmake --preset debug && cmake --build build-debug && ctest --preset debug
+```
+
+`.clang-tidy` keeps only the check families that look for defects — layout is
+`clang-format`'s job, and the `readability` and `modernize` families disagree with
+this codebase on purpose. Both config files say why, check by check.
 
 ## The language
 

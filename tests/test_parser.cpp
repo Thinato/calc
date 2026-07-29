@@ -1,6 +1,6 @@
-#include <doctest/doctest.h>
-
 #include <string_view>
+
+#include <doctest/doctest.h>
 
 #include "core/parser.hpp"
 
@@ -23,9 +23,9 @@ std::size_t error_column_for(std::string_view line) {
 }  // namespace
 
 TEST_CASE("parser accepts every operator in the language") {
-  for (std::string_view line : {"1 + 2", "1 - 2", "1 * 2", "1 / 2", "1 ^ 2",
-                                "(1 + 2) * 3", "-4", "+4", "sqrt(16)",
-                                "pow(2, 10)", "sqrt(pow(3, 2))", ".5 + 1"}) {
+  for (std::string_view line :
+       {"1 + 2", "1 - 2", "1 * 2", "1 / 2", "1 ^ 2", "(1 + 2) * 3", "-4", "+4",
+        "sqrt(16)", "pow(2, 10)", "sqrt(pow(3, 2))", ".5 + 1"}) {
     CAPTURE(line);
     CHECK(parse(line).ok());
   }

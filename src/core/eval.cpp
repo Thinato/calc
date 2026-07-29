@@ -53,8 +53,8 @@ Result<Value> evaluate_binary(const Binary& node, const Environment& environment
 Result<Value> evaluate_call(const Call& node, const Environment& environment) {
   const FunctionDef* definition = find_function(node.name);
   if (definition == nullptr) {
-    return make_error(ErrorCode::UnknownFunction,
-                      "unknown function '" + node.name + "'", node.column);
+    return make_error(ErrorCode::UnknownFunction, "unknown function '" + node.name + "'",
+                      node.column);
   }
 
   std::vector<Value> args;
@@ -82,8 +82,7 @@ Result<Value> evaluate(const Node& node, const Environment& environment) {
       // Names flow top to bottom, so this also covers using a name before the
       // line that defines it.
       return make_error(ErrorCode::UndefinedName,
-                        "undefined name '" + identifier->name + "'",
-                        identifier->column);
+                        "undefined name '" + identifier->name + "'", identifier->column);
     }
     return binding->value;
   }

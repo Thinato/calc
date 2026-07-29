@@ -49,15 +49,14 @@ bool Environment::is_constant_name(std::string_view name) {
 std::optional<Error> Environment::define(const std::string& name, Value value,
                                          std::size_t row, std::size_t column) {
   if (find_function(name) != nullptr) {
-    return make_error(ErrorCode::NameIsFunction, "'" + name + "' is a function",
-                      column);
+    return make_error(ErrorCode::NameIsFunction, "'" + name + "' is a function", column);
   }
 
   const auto existing = bindings_.find(name);
   if (existing != bindings_.end() && existing->second.is_constant) {
     if (existing->second.builtin) {
-      return make_error(ErrorCode::ConstantReassigned,
-                        name + " is a built-in constant", column);
+      return make_error(ErrorCode::ConstantReassigned, name + " is a built-in constant",
+                        column);
     }
     // Naming the defining line is what makes this error actionable.
     return make_error(ErrorCode::ConstantReassigned,

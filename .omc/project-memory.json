@@ -113,20 +113,38 @@
   "hotPaths": [
     {
       "path": "tests/test_render.cpp",
-      "accessCount": 13,
-      "lastAccessed": 1785344613406,
+      "accessCount": 18,
+      "lastAccessed": 1785360577836,
       "type": "file"
     },
     {
       "path": "src/ui/layout.cpp",
-      "accessCount": 12,
-      "lastAccessed": 1785344402077,
+      "accessCount": 13,
+      "lastAccessed": 1785360414807,
       "type": "file"
     },
     {
       "path": "README.md",
-      "accessCount": 9,
-      "lastAccessed": 1785357563709,
+      "accessCount": 12,
+      "lastAccessed": 1785361171429,
+      "type": "file"
+    },
+    {
+      "path": "src/ui/app.cpp",
+      "accessCount": 7,
+      "lastAccessed": 1785360534383,
+      "type": "file"
+    },
+    {
+      "path": "CMakeLists.txt",
+      "accessCount": 5,
+      "lastAccessed": 1785360818517,
+      "type": "file"
+    },
+    {
+      "path": "src/core/engine.cpp",
+      "accessCount": 4,
+      "lastAccessed": 1785360404174,
       "type": "file"
     },
     {
@@ -148,9 +166,9 @@
       "type": "file"
     },
     {
-      "path": "src/ui/app.cpp",
+      "path": "install.sh",
       "accessCount": 3,
-      "lastAccessed": 1785357493425,
+      "lastAccessed": 1785358512918,
       "type": "file"
     },
     {
@@ -184,6 +202,24 @@
       "type": "file"
     },
     {
+      "path": "src/main.cpp",
+      "accessCount": 2,
+      "lastAccessed": 1785358375405,
+      "type": "file"
+    },
+    {
+      "path": ".clang-format",
+      "accessCount": 2,
+      "lastAccessed": 1785360190319,
+      "type": "file"
+    },
+    {
+      "path": ".clang-tidy",
+      "accessCount": 2,
+      "lastAccessed": 1785360240124,
+      "type": "file"
+    },
+    {
       "path": "src/doc/results.hpp",
       "accessCount": 1,
       "lastAccessed": 1785334721365,
@@ -193,12 +229,6 @@
       "path": "src/ui/layout.hpp",
       "accessCount": 1,
       "lastAccessed": 1785334722461,
-      "type": "file"
-    },
-    {
-      "path": "src/core/engine.cpp",
-      "accessCount": 1,
-      "lastAccessed": 1785334758692,
       "type": "file"
     },
     {
@@ -235,6 +265,12 @@
       "path": "src/vim/excmd.hpp",
       "accessCount": 1,
       "lastAccessed": 1785357434829,
+      "type": "file"
+    },
+    {
+      "path": "tests/.clang-tidy",
+      "accessCount": 1,
+      "lastAccessed": 1785360611473,
       "type": "file"
     }
   ],
