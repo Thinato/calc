@@ -44,9 +44,12 @@ PI * radius ^ 2
 count = 1
 count = count + 1
 
-# These lines show no result. Put the cursor on one to read why.
+# These lines show why they failed, beside them. Move onto one and its
+# reason hides, so editing it is not a running commentary.
 1 +
 1 / 0
 sqrt(-1)
 undefined_name * 2
 x1 = 5
+
+

@@ -8,10 +8,11 @@ its result is shown after it and cannot be edited.
  2 sqrt(16) + pow(2, 10) = 1028
  3 subtotal = 128.40
  4 subtotal * 0.0825 = 10.593
- 5
+ 5 subtotal / 0  Error: division by zero
+ 6
 ~
 ────────────────────────────────────────────────────────────
- NORMAL  notes.calc [+]                                 5:1
+ NORMAL  notes.calc [+]                                 6:1
 ```
 
 It behaves like a text editor rather than a prompt: move around, edit any line,
@@ -48,9 +49,18 @@ Precedence is the ordinary mathematical one, so `1 + 2 * 3` is `7` and `-2^2` is
 Results are formatted the way a calculator should: `3` rather than `3.000000`,
 and `0.1 + 0.2` reads `0.3` rather than `0.30000000000000004`.
 
-A line that does not parse simply shows no result — a half-typed expression is
-the normal state while typing. The reason appears in the bottom line when the
-cursor is on that line, with the column it went wrong at.
+## Errors
+
+A line that does not work says why, in red, where its result would have gone:
+
+```
+ 1 1 / 0  Error: division by zero
+ 2 nope * 2  Error: undefined name 'nope'
+```
+
+With one exception: **the line the cursor is on stays quiet.** A half-typed
+expression is the normal state while typing, so being told about it on every
+keystroke would only get in the way. Move off the line and the reason appears.
 
 ## Variables and constants
 
@@ -79,7 +89,7 @@ and the message quotes what you typed rather than mis-reading it as something
 else:
 
 ```
-x1 = 5      col 1: invalid name 'x1': names cannot contain digits
+x1 = 5  Error: invalid name 'x1': names cannot contain digits
 ```
 
 Names resolve **top to bottom**, like reading a script. A name works only below
@@ -125,11 +135,11 @@ goes to the system clipboard
 
 ## Results are not text
 
-The result is not stored in the buffer. A line holds only what you typed;
-results live in a separate cache and are drawn by the renderer. The cursor is
-clamped to the end of the typed text, so no motion, operator or paste can reach
-the result column — it is unreachable by construction rather than guarded by
-checks.
+Neither the result nor the error is stored in the buffer. A line holds only what
+you typed; both overlays live in a separate cache and are drawn by the renderer.
+The cursor is clamped to the end of the typed text, so no motion, operator or
+paste can reach the result column — it is unreachable by construction rather than
+guarded by checks.
 
 Two things follow from that. `$` and `A` land at the end of your expression, not
 after the result. And `:w` writes only the expressions, so a saved file stays
@@ -137,8 +147,9 @@ clean and reopens unchanged.
 
 `tests/test_invariants.cpp` enforces this by feeding the engine random key
 sequences and asserting the cursor never passes the end of a line, and that no
-line ever ends with the result rendered for it. (Note it cannot simply ban `=`
-from the buffer: since assignments exist, `=` is legitimate text you type.)
+line ever ends with the result — or the error — rendered for it. (Note it cannot
+simply ban `=` from the buffer: since assignments exist, `=` is legitimate text
+you type.)
 
 ## Layout
 

@@ -102,11 +102,17 @@ TEST_CASE("a line with no result shows no separator") {
   CHECK_FALSE(contains(lines, "hello ="));
 }
 
-TEST_CASE("a half-typed expression shows no inline error") {
-  // Errors belong in the status bar, because mid-typing is the normal state.
+TEST_CASE("a half-typed expression stays quiet under the cursor") {
+  // The reason the current line is the one exception: mid-typing is the normal
+  // state, and being told about it on every keystroke is noise.
   const auto lines = render_lines("", "i1 + ");
   CHECK_FALSE(contains(lines, "="));
-  CHECK(contains(lines, "incomplete expression"));
+  CHECK_FALSE(contains(lines, "Error:"));
+}
+
+TEST_CASE("an unfinished line reports itself once the cursor leaves") {
+  const auto lines = render_lines("", "i1 +<esc>o", 60);
+  CHECK(contains(lines, "1 +  Error: incomplete expression"));
 }
 
 TEST_CASE("a definition renders its computed value after the expression") {
@@ -134,20 +140,52 @@ TEST_CASE("the worked example renders as designed") {
   CHECK(contains(lines, "subtotal + tip = 154.08"));
 }
 
-TEST_CASE("a name used before it is defined reports itself in the status bar") {
-  const auto lines = render_lines("x * 2\nx = 5", "");
-  CHECK(contains(lines, "undefined name 'x'"));
-  CHECK_FALSE(contains(lines, "x * 2 ="));  // and shows nothing inline
+TEST_CASE("a name used before it is defined says so beside the line") {
+  const auto lines = render_lines("x * 2\nx = 5", "j", 60);
+  CHECK(contains(lines, "x * 2  Error: undefined name 'x'"));
 }
 
 TEST_CASE("reassigning a constant reports where it came from") {
-  const auto lines = render_lines("TEST = 2\nTEST = 5", "j", 60);
-  CHECK(contains(lines, "TEST is a constant, defined on line 1"));
+  // Note the cursor stays on line 1: the error is on line 2, and parking on it
+  // would hide it.
+  const auto lines = render_lines("TEST = 2\nTEST = 5", "", 60);
+  CHECK(contains(lines, "Error: TEST is a constant, defined on line 1"));
 }
 
-TEST_CASE("an error names the column it happened at") {
-  const auto lines = render_lines("10 + 1 / 0", "");
-  CHECK(contains(lines, "col 8: division by zero"));  // the '/'
+TEST_CASE("an error is drawn after the line that caused it") {
+  const auto lines = render_lines("10 + 1 / 0\nx = 1", "j", 60);
+  CHECK(contains(lines, "10 + 1 / 0  Error: division by zero"));
+  // The column is gone: beside the expression it no longer earns its width.
+  CHECK_FALSE(contains(lines, "col 8"));
+}
+
+TEST_CASE("an error is hidden while the cursor is on its line") {
+  const auto lines = render_lines("10 + 1 / 0\nx = 1", "", 60);
+  CHECK_FALSE(contains(lines, "Error:"));
+  CHECK_FALSE(contains(lines, "division by zero"));
+}
+
+TEST_CASE("moving back onto an erroring line hides it again") {
+  CHECK(contains(render_lines("10 + 1 / 0\nx = 1", "j", 60), "Error:"));
+  CHECK_FALSE(contains(render_lines("10 + 1 / 0\nx = 1", "jk", 60), "Error:"));
+}
+
+TEST_CASE("a line never shows both a result and an error") {
+  // The two overlays occupy the same place, and evaluate_line() guarantees a
+  // line has at most one of them.
+  const auto lines = render_lines("1 / 0\n1 + 2", "j", 60);
+  CHECK(contains(lines, "1 / 0  Error: division by zero"));
+  CHECK_FALSE(contains(lines, "1 / 0 ="));
+  CHECK(contains(lines, "1 + 2 = 3"));      // and a good line is untouched
+  CHECK_FALSE(contains(lines, "1 + 2  Error"));
+}
+
+TEST_CASE("a long error clips itself rather than the expression") {
+  // The overlay must never cost the user characters they typed. 30 columns is
+  // far too narrow for this message, so something has to give.
+  const auto lines = render_lines("undefined_name * 2\nx = 1", "j", 30);
+  CHECK(contains(lines, "undefined_name * 2  Error: "));
+  CHECK_FALSE(contains(lines, "undefined_name'"));  // the message lost its tail
 }
 
 TEST_CASE("the status bar names the mode and the cursor position") {

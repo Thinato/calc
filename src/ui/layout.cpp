@@ -19,6 +19,11 @@ constexpr std::size_t kScrollOff = 3;
 // "1 + 2 = 3".
 constexpr std::string_view kResultSeparator = " = ";
 
+// And what introduces an error, drawn in the same place a result would be. Two
+// leading spaces because an error has no " = " to glue it to the expression, and
+// without the gap "1 +Error:" reads as one token.
+constexpr std::string_view kErrorPrefix = "  Error: ";
+
 // Ordered by precedence: a cursor or a selection wins over a name highlight,
 // because knowing where you are matters more than what a name is.
 enum class CellStyle { Plain, Variable, Constant, Selected, Cursor };
@@ -123,9 +128,11 @@ std::string gutter_text(std::size_t row, std::size_t width) {
   return " " + number + " ";
 }
 
-// The bottom line: whatever the user most needs to see right now.
-Element message_line(const Document& document, const ResultCache& results,
-                     const VimEngine& engine) {
+// The bottom line: the command being typed, or the answer to something the user
+// just did — ":nonsense", a failed search, "yanked 3". A line's own error is a
+// property of that line and is drawn beside it instead, so nothing here reports
+// on the buffer's contents any more.
+Element message_line(const VimEngine& engine) {
   if (engine.mode() == Mode::CommandLine) {
     return hbox({text(engine.command_line()),
                  text(" ") | inverted | focusCursorBar});
@@ -133,20 +140,6 @@ Element message_line(const Document& document, const ResultCache& results,
   if (!engine.message().empty()) {
     return text(engine.message()) |
            color(engine.message_is_error() ? theme::error() : theme::notice());
-  }
-  // No message: explain why the current line has no result, if that is the
-  // case. Errors never appear inline, because a half-typed expression is the
-  // normal state while typing.
-  const LineEval& eval = results.at(document.cursor().row);
-  if (eval.error.has_value()) {
-    // The column is reported in characters so it matches the ruler, and lines up
-    // with what the user counts on screen rather than the byte offset.
-    const std::size_t column =
-        utf8::chars_before(document.line(document.cursor().row), eval.error->column) + 1;
-    return hbox({
-        text("col " + std::to_string(column) + ": ") | color(theme::separator_dim()),
-        text(eval.error->message) | color(theme::error()),
-    });
   }
   return text("");
 }
@@ -291,13 +284,35 @@ ftxui::Element render_frame(const Document& document, const ResultCache& results
     Elements line_spans = styled_line(document.line(row), styling);
     spans.insert(spans.end(), line_spans.begin(), line_spans.end());
 
-    // The result. It is drawn here and stored nowhere, which is exactly why it
-    // cannot be edited. A definition whose value was typed out literally shows
-    // nothing, so `x = 128.40` is never restated as `= 128.4`.
+    // The result, or the reason there is none. Both are drawn here and stored
+    // nowhere, which is exactly why neither can be edited. A definition whose
+    // value was typed out literally shows nothing, so `x = 128.40` is never
+    // restated as `= 128.4`.
+    //
+    // They are mutually exclusive by construction — a failed evaluate_line()
+    // returns before it sets a value — so `else if` states that invariant rather
+    // than merely ordering two independent checks.
+    //
+    // An error stays hidden on the line the cursor is on, because a half-typed
+    // expression is the normal state while editing; it appears the moment you
+    // move away. That keys off the row rather than styling.draw_cursor, which is
+    // false in command-line mode: pressing ':' should not flicker an error into
+    // view on the line you are still parked on.
     if (eval.has_result() && eval.show_result) {
       spans.push_back(text(std::string(kResultSeparator)) |
                       color(theme::separator_dim()));
       spans.push_back(text(eval.text) | color(theme::result()) | bold);
+    } else if (eval.error.has_value() && row != cursor.row) {
+      spans.push_back(text(std::string(kErrorPrefix)) | color(theme::error()) | bold);
+      // The message is the only span allowed to shrink. An hbox with nothing
+      // shrinkable narrows every child in proportion, which on a narrow window
+      // would eat the user's own text to make room for our overlay — exactly
+      // backwards. Marking the message means it absorbs the whole shortfall, so
+      // the expression keeps its width and a clipped message stays obviously
+      // clipped. Deliberately not applied to a result: a truncated number would
+      // read as a wrong answer rather than a partial one.
+      spans.push_back(text(eval.error->message) | color(theme::error()) |
+                      xflex_shrink);
     }
 
     rows.push_back(hbox(std::move(spans)));
@@ -307,7 +322,7 @@ ftxui::Element render_frame(const Document& document, const ResultCache& results
       vbox(std::move(rows)),
       separatorLight() | color(theme::separator_dim()),
       status_line(document, engine),
-      message_line(document, results, engine),
+      message_line(engine),
   });
 }
 

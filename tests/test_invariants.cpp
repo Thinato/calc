@@ -107,7 +107,7 @@ TEST_CASE("no key sequence can reach the result column") {
   }
 }
 
-TEST_CASE("a result never leaks into the buffer text") {
+TEST_CASE("neither a result nor an error leaks into the buffer text") {
   for (std::uint64_t seed = 1; seed <= 200; ++seed) {
     Rng rng(seed * 0xD1B54A32D192ED03ULL);
 
@@ -128,17 +128,30 @@ TEST_CASE("a result never leaks into the buffer text") {
     // value must never end up in a line. The engine has no path that could put
     // one there — `gy` reaches the register and the clipboard, never the
     // document — and this is what holds that guarantee.
+    //
+    // The same claim covers the inline error, which is the renderer's other
+    // overlay. Random editing leaves most of these lines broken, so that branch
+    // is the common case here rather than a rare one.
+    const auto ends_with = [](const std::string& line, const std::string& tail) {
+      return line.size() >= tail.size() &&
+             line.compare(line.size() - tail.size(), tail.size(), tail) == 0;
+    };
+
     for (std::size_t row = 0; row < document.line_count(); ++row) {
       const LineEval& eval = results.at(row);
-      if (!eval.has_result()) continue;
       const std::string& line = document.line(row);
-      const std::string rendered = " = " + eval.text;
-      const bool ends_with_result =
-          line.size() >= rendered.size() &&
-          line.compare(line.size() - rendered.size(), rendered.size(), rendered) == 0;
       CAPTURE(line);
-      CAPTURE(rendered);
-      REQUIRE_FALSE(ends_with_result);
+
+      if (eval.has_result()) {
+        const std::string rendered = " = " + eval.text;
+        CAPTURE(rendered);
+        REQUIRE_FALSE(ends_with(line, rendered));
+      }
+      if (eval.error.has_value()) {
+        const std::string rendered = "  Error: " + eval.error->message;
+        CAPTURE(rendered);
+        REQUIRE_FALSE(ends_with(line, rendered));
+      }
     }
   }
 }

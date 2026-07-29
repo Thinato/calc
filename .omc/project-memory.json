@@ -1,0 +1,170 @@
+{
+  "version": "1.0.0",
+  "lastScanned": 1785334588655,
+  "projectRoot": "/Users/paulolisecki/repos/thinato/calc",
+  "techStack": {
+    "languages": [
+      {
+        "name": "C/C++",
+        "version": null,
+        "confidence": "high",
+        "markers": [
+          "CMakeLists.txt"
+        ]
+      }
+    ],
+    "frameworks": [],
+    "packageManager": null,
+    "runtime": null
+  },
+  "build": {
+    "buildCommand": null,
+    "testCommand": null,
+    "lintCommand": null,
+    "devCommand": null,
+    "scripts": {}
+  },
+  "conventions": {
+    "namingStyle": null,
+    "importStyle": null,
+    "testPattern": null,
+    "fileOrganization": null
+  },
+  "structure": {
+    "isMonorepo": false,
+    "workspaces": [],
+    "mainDirectories": [
+      "examples",
+      "src",
+      "tests"
+    ],
+    "gitBranches": null
+  },
+  "customNotes": [],
+  "directoryMap": {
+    "build": {
+      "path": "build",
+      "purpose": "Build output",
+      "fileCount": 12,
+      "lastAccessed": 1785334588644,
+      "keyFiles": [
+        "CMakeCache.txt",
+        "CTestTestfile.cmake",
+        "build.ninja",
+        "calc",
+        "calc_tests"
+      ]
+    },
+    "build-debug": {
+      "path": "build-debug",
+      "purpose": null,
+      "fileCount": 12,
+      "lastAccessed": 1785334588645,
+      "keyFiles": [
+        "CMakeCache.txt",
+        "CTestTestfile.cmake",
+        "build.ninja",
+        "calc",
+        "calc_tests"
+      ]
+    },
+    "examples": {
+      "path": "examples",
+      "purpose": "Example code",
+      "fileCount": 1,
+      "lastAccessed": 1785334588645,
+      "keyFiles": [
+        "demo.calc"
+      ]
+    },
+    "src": {
+      "path": "src",
+      "purpose": "Source code",
+      "fileCount": 1,
+      "lastAccessed": 1785334588645,
+      "keyFiles": [
+        "main.cpp"
+      ]
+    },
+    "tests": {
+      "path": "tests",
+      "purpose": "Test files",
+      "fileCount": 12,
+      "lastAccessed": 1785334588645,
+      "keyFiles": [
+        "main.cpp",
+        "test_document.cpp",
+        "test_eval.cpp",
+        "test_excmd.cpp",
+        "test_format.cpp"
+      ]
+    },
+    "tests/helpers": {
+      "path": "tests/helpers",
+      "purpose": "Helper functions",
+      "fileCount": 2,
+      "lastAccessed": 1785334588646,
+      "keyFiles": [
+        "vim_harness.cpp",
+        "vim_harness.hpp"
+      ]
+    }
+  },
+  "hotPaths": [
+    {
+      "path": "src/ui/layout.cpp",
+      "accessCount": 6,
+      "lastAccessed": 1785335555641,
+      "type": "file"
+    },
+    {
+      "path": "tests/test_render.cpp",
+      "accessCount": 6,
+      "lastAccessed": 1785335561896,
+      "type": "file"
+    },
+    {
+      "path": "README.md",
+      "accessCount": 5,
+      "lastAccessed": 1785335380730,
+      "type": "file"
+    },
+    {
+      "path": "tests/test_invariants.cpp",
+      "accessCount": 3,
+      "lastAccessed": 1785335290741,
+      "type": "file"
+    },
+    {
+      "path": "src/ui/theme.hpp",
+      "accessCount": 1,
+      "lastAccessed": 1785334720951,
+      "type": "file"
+    },
+    {
+      "path": "src/doc/results.hpp",
+      "accessCount": 1,
+      "lastAccessed": 1785334721365,
+      "type": "file"
+    },
+    {
+      "path": "src/ui/layout.hpp",
+      "accessCount": 1,
+      "lastAccessed": 1785334722461,
+      "type": "file"
+    },
+    {
+      "path": "src/core/engine.cpp",
+      "accessCount": 1,
+      "lastAccessed": 1785334758692,
+      "type": "file"
+    },
+    {
+      "path": "examples/demo.calc",
+      "accessCount": 1,
+      "lastAccessed": 1785335384708,
+      "type": "file"
+    }
+  ],
+  "userDirectives": []
+}
