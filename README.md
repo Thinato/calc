@@ -33,7 +33,7 @@ ctest --test-dir build          # 195 tests, no terminal required
 
 ## The language
 
-| | |
+| symbol | meaning |
 | --- | --- |
 | `+` `-` `*` `/` | add, subtract, multiply, divide |
 | `^` | power, right associative: `2^3^2` is `512` |
@@ -53,7 +53,7 @@ and `0.1 + 0.2` reads `0.3` rather than `0.30000000000000004`.
 
 Every colour answers one question, so the screen can be read at a glance:
 
-| | |
+| color | meaning |
 | --- | --- |
 | dimmed | a comment — prose to skim past |
 | light blue | a function: `sqrt`, `pow` |
@@ -96,7 +96,7 @@ Name a value and reuse it below:
 
 Which kind of name you get is decided by spelling alone:
 
-| | |
+| type | meaning |
 | --- | --- |
 | **variable** | holds at least one lowercase letter — `x`, `test`, `helloWorld`, `xOne`. Reassign it freely. |
 | **constant** | holds no lowercase letters — `PI`, `RATE`, `TEST_ONE`. Defining it twice is an error that names the line it came from. |
@@ -145,7 +145,7 @@ goes to the system clipboard
 
 **Calculator extras**
 
-| | |
+| keybind | what it does |
 | --- | --- |
 | `gy` | yank this line's result to the clipboard |
 | `gY` | yank `expression = result` |
