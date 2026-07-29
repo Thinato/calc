@@ -17,6 +17,10 @@ struct ExOutcome {
   bool quit = false;
   std::optional<std::size_t> goto_row;      // 0-based
   std::optional<bool> line_numbers;         // :set number / :set nonumber
+  // A page to open in the browser, for :github. Named rather than opened here
+  // for the same reason quitting is: launching a program is the outer layer's
+  // job, which is what keeps this one a pure function of its inputs.
+  std::optional<std::string> open_url;
 };
 
 // `command` is the text after the ':'. Writing and reading files happens here,

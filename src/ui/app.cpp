@@ -64,12 +64,46 @@ void copy_to_clipboard(const std::string& text) {
   pclose(pipe);
 }
 
+// A URL safe to hand to a shell: https, and nothing a shell would read as
+// anything but a word. The only caller passes a compile-time constant, so this is
+// not defending against today's input — it is making sure a later caller cannot
+// turn this into command execution by passing something with a ';' in it.
+bool is_safe_url(const std::string& url) {
+  if (url.rfind("https://", 0) != 0) return false;
+  return std::all_of(url.begin(), url.end(), [](char byte) {
+    return (byte >= 'a' && byte <= 'z') || (byte >= 'A' && byte <= 'Z') ||
+           (byte >= '0' && byte <= '9') || byte == ':' || byte == '/' ||
+           byte == '.' || byte == '-' || byte == '_';
+  });
+}
+
+void open_in_browser(const std::string& url) {
+#if defined(__APPLE__)
+  const char* opener = "open";
+#elif defined(__linux__)
+  const char* opener = "xdg-open";
+#else
+  const char* opener = nullptr;
+#endif
+  if (opener == nullptr || !is_safe_url(url)) return;
+
+  // Output is discarded and the job backgrounded: anything the opener printed
+  // would land in the middle of the drawn frame, and xdg-open can sit waiting on
+  // the browser it launched, which would freeze the editor until it returned.
+  const std::string command = std::string(opener) + " '" + url + "' >/dev/null 2>&1 &";
+
+  // NOLINTNEXTLINE(cert-env33-c) - the URL is validated above and quoted here
+  FILE* pipe = popen(command.c_str(), "r");
+  if (pipe != nullptr) pclose(pipe);
+}
+
 }  // namespace
 
 int run_editor(Document& document) {
   ResultCache results;
   VimEngine engine(document, results);
   engine.set_clipboard_writer(&copy_to_clipboard);
+  engine.set_url_opener(&open_in_browser);
   Viewport viewport;
 
   auto screen = ftxui::ScreenInteractive::Fullscreen();

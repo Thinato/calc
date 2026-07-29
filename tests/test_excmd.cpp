@@ -5,7 +5,12 @@
 #include <sstream>
 #include <string>
 
+#include <vector>
+
 #include "doc/file.hpp"
+#include "doc/results.hpp"
+#include "helpers/vim_harness.hpp"
+#include "vim/engine.hpp"
 #include "vim/excmd.hpp"
 
 using namespace calc;
@@ -188,6 +193,63 @@ TEST_CASE("an empty command does nothing") {
   CHECK_FALSE(outcome.is_error);
   CHECK_FALSE(outcome.quit);
   CHECK(outcome.message.empty());
+}
+
+TEST_CASE(":github asks for the project page to be opened") {
+  Document document;
+  const ExOutcome outcome = execute_ex_command("github", document);
+  CHECK_FALSE(outcome.is_error);
+  REQUIRE(outcome.open_url.has_value());
+  CHECK(*outcome.open_url == "https://github.com/Thinato/calc");
+  // The message names the destination, and nothing else happens to the buffer.
+  CHECK(outcome.message == "opening https://github.com/Thinato/calc");
+  CHECK_FALSE(outcome.quit);
+  CHECK_FALSE(outcome.goto_row.has_value());
+  CHECK_FALSE(document.modified());
+}
+
+TEST_CASE(":github does not open anything on its own") {
+  // The point of returning the URL rather than launching it here: this test runs
+  // in CI without a browser appearing.
+  Document document;
+  CHECK_FALSE(execute_ex_command("w", document).open_url.has_value());
+  CHECK_FALSE(execute_ex_command("q", document).open_url.has_value());
+}
+
+TEST_CASE("a command is not a prefix of :github") {
+  Document document;
+  CHECK(execute_ex_command("git", document).is_error);
+  CHECK(execute_ex_command("githubs", document).is_error);
+  CHECK(execute_ex_command("g", document).is_error);
+}
+
+TEST_CASE("the engine hands the URL to the opener it was given") {
+  // The wiring is the part that can silently rot: a command that names a URL
+  // nobody acts on looks exactly like a working one.
+  Document document = Document::from_text("1 + 2");
+  ResultCache results;
+  VimEngine engine(document, results);
+
+  std::vector<std::string> opened;
+  engine.set_url_opener([&](const std::string& url) { opened.push_back(url); });
+
+  for (const Key& key : test::parse_keys(":github<cr>")) engine.feed(key);
+
+  REQUIRE(opened.size() == 1);
+  CHECK(opened[0] == "https://github.com/Thinato/calc");
+  CHECK(engine.message() == "opening https://github.com/Thinato/calc");
+  CHECK_FALSE(engine.message_is_error());
+  CHECK(engine.mode() == Mode::Normal);  // and the command line is done with
+}
+
+TEST_CASE("an engine with no opener wired up still survives :github") {
+  // The default in tests, and on a platform with no opener to offer.
+  Document document = Document::from_text("1 + 2");
+  ResultCache results;
+  VimEngine engine(document, results);
+
+  for (const Key& key : test::parse_keys(":github<cr>")) engine.feed(key);
+  CHECK(engine.message() == "opening https://github.com/Thinato/calc");
 }
 
 TEST_CASE("reading a directory fails cleanly") {

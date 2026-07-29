@@ -26,7 +26,7 @@ automatically, so a fresh clone needs nothing installed.
 ```sh
 cmake --preset default
 cmake --build build
-ctest --test-dir build          # 190 tests, no terminal required
+ctest --test-dir build          # 195 tests, no terminal required
 ./build/calc                    # scratch buffer
 ./build/calc notes.calc         # open a file
 ```
@@ -151,7 +151,8 @@ goes to the system clipboard
 | `gY` | yank `expression = result` |
 
 **Commands** `:w [file]` · `:wq` `:x` · `:q` `:q!` · `:e[!] file` ·
-`:42` jumps to a line · `:set number` / `:set nonumber` · `:help`
+`:42` jumps to a line · `:set number` / `:set nonumber` · `:help` ·
+`:github` opens [the project page](https://github.com/Thinato/calc) in a browser
 
 ## Results are not text
 

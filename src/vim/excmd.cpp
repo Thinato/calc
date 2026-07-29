@@ -11,6 +11,9 @@ namespace {
 constexpr std::string_view kUnsavedChanges =
     "no write since last change (add ! to override)";
 
+// Where :github goes.
+constexpr std::string_view kProjectUrl = "https://github.com/Thinato/calc";
+
 std::string_view trim(std::string_view text) {
   const std::size_t begin = text.find_first_not_of(" \t");
   if (begin == std::string_view::npos) return {};
@@ -135,6 +138,14 @@ ExOutcome execute_ex_command(std::string_view command, Document& document) {
   }
   if (parsed.name == "set" || parsed.name == "se") {
     return do_set(parsed);
+  }
+  if (parsed.name == "github") {
+    ExOutcome outcome;
+    outcome.open_url = std::string(kProjectUrl);
+    // Said out loud because the browser may take a moment to come up, and
+    // because it names where you are about to be sent.
+    outcome.message = "opening " + std::string(kProjectUrl);
+    return outcome;
   }
   if (parsed.name == "h" || parsed.name == "help") {
     ExOutcome outcome;

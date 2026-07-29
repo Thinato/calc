@@ -70,6 +70,11 @@ class VimEngine {
   // registers and `gy`. Injected so this layer stays free of platform calls.
   void set_clipboard_writer(std::function<void(const std::string&)> writer);
 
+  // Called with a URL to show in a browser, for :github. Injected for the same
+  // reason as the clipboard: opening one means launching another program, and
+  // this layer knows nothing of the platform it is on.
+  void set_url_opener(std::function<void(const std::string&)> opener);
+
  private:
   void feed_normal(const Key& key);
   void feed_insert(const Key& key);
@@ -152,6 +157,7 @@ class VimEngine {
   bool suppress_record_ = false;
 
   std::function<void(const std::string&)> clipboard_writer_;
+  std::function<void(const std::string&)> url_opener_;
 };
 
 }  // namespace calc

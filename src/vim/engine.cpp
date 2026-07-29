@@ -62,6 +62,10 @@ void VimEngine::set_clipboard_writer(std::function<void(const std::string&)> wri
   clipboard_writer_ = std::move(writer);
 }
 
+void VimEngine::set_url_opener(std::function<void(const std::string&)> opener) {
+  url_opener_ = std::move(opener);
+}
+
 void VimEngine::set_message(std::string text, bool is_error) {
   message_ = std::move(text);
   message_is_error_ = is_error;
@@ -919,6 +923,7 @@ void VimEngine::run_ex(const std::string& command) {
     document_.set_cursor(Cursor{row, first_non_blank(document_, row)});
     clamp_cursor_for_mode();
   }
+  if (outcome.open_url.has_value() && url_opener_) url_opener_(*outcome.open_url);
   if (outcome.quit) quit_requested_ = true;
 
   // A reload through :e replaces the buffer, so the cursor may be stale.

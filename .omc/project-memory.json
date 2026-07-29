@@ -125,14 +125,32 @@
     },
     {
       "path": "README.md",
-      "accessCount": 7,
-      "lastAccessed": 1785344438470,
+      "accessCount": 9,
+      "lastAccessed": 1785357563709,
       "type": "file"
     },
     {
       "path": "tests/test_invariants.cpp",
       "accessCount": 3,
       "lastAccessed": 1785335290741,
+      "type": "file"
+    },
+    {
+      "path": "src/vim/engine.hpp",
+      "accessCount": 3,
+      "lastAccessed": 1785357464038,
+      "type": "file"
+    },
+    {
+      "path": "src/vim/engine.cpp",
+      "accessCount": 3,
+      "lastAccessed": 1785357475395,
+      "type": "file"
+    },
+    {
+      "path": "src/ui/app.cpp",
+      "accessCount": 3,
+      "lastAccessed": 1785357493425,
       "type": "file"
     },
     {
@@ -151,6 +169,18 @@
       "path": "src/ui/theme.hpp",
       "accessCount": 2,
       "lastAccessed": 1785344132449,
+      "type": "file"
+    },
+    {
+      "path": "src/vim/excmd.cpp",
+      "accessCount": 2,
+      "lastAccessed": 1785357451937,
+      "type": "file"
+    },
+    {
+      "path": "tests/test_excmd.cpp",
+      "accessCount": 2,
+      "lastAccessed": 1785357519475,
       "type": "file"
     },
     {
@@ -199,6 +229,12 @@
       "path": "tests/test_syntax.cpp",
       "accessCount": 1,
       "lastAccessed": 1785344193167,
+      "type": "file"
+    },
+    {
+      "path": "src/vim/excmd.hpp",
+      "accessCount": 1,
+      "lastAccessed": 1785357434829,
       "type": "file"
     }
   ],
