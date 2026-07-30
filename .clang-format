@@ -17,11 +17,14 @@ ColumnLimit: 90
 #   case 'c': return Operator::Change;
 AllowShortCaseLabelsOnASingleLine: true
 
-# Three blocks of includes: the standard library, then what was fetched, then this
-# project. Google's default sorts <ftxui/...> in with <algorithm>, which loses the
-# one grouping that says at a glance what a file depends on.
+# Three blocks of includes: the standard library, then what the platform or the
+# build brought in, then this project. Google's default sorts <ftxui/...> in with
+# <algorithm>, which loses the one grouping that says at a glance what a file
+# depends on. <emscripten.h> belongs in the middle block for the same reason.
 IncludeCategories:
   - Regex: '^<(ftxui|doctest)/'
+    Priority: 2
+  - Regex: '^<emscripten'
     Priority: 2
   - Regex: '^<'
     Priority: 1

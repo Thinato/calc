@@ -72,8 +72,28 @@ jobs:
       - name: Check formatting
         run: |
           clang-format --version
-          find src tests \( -name '*.cpp' -o -name '*.hpp' \) \
+          find src tests web \( -name '*.cpp' -o -name '*.hpp' \) \
             | xargs clang-format --dry-run --Werror
+
+  web:
+    name: Web build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # The same configure and build the Web workflow deploys, so a change that
+      # breaks WebAssembly fails here instead of on the site. No deploy, and no
+      # test step: ctest runs the native suite, which the build job already did.
+      - uses: mymindstorm/setup-emsdk@v14
+        with:
+          version: 6.0.5
+          actions-cache-folder: emsdk-cache
+
+      - name: Configure
+        run: emcmake cmake -B build-web -DCMAKE_BUILD_TYPE=MinSizeRel
+
+      - name: Build
+        run: cmake --build build-web --parallel
 
   lint:
     name: Lint
