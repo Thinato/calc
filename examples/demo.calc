@@ -47,7 +47,6 @@ count = count + 1
 count = count + 1
 count = count + 1
 count = count + 1
-count
 
 # These lines show why they failed, beside them. Move onto one and its
 # reason hides, so editing it is not a running commentary.

@@ -118,33 +118,57 @@
       "type": "file"
     },
     {
-      "path": "src/ui/layout.cpp",
-      "accessCount": 13,
-      "lastAccessed": 1785360414807,
+      "path": "README.md",
+      "accessCount": 17,
+      "lastAccessed": 1785371216828,
       "type": "file"
     },
     {
-      "path": "README.md",
-      "accessCount": 12,
-      "lastAccessed": 1785361171429,
+      "path": "src/ui/layout.cpp",
+      "accessCount": 14,
+      "lastAccessed": 1785372113166,
       "type": "file"
     },
     {
       "path": "src/ui/app.cpp",
-      "accessCount": 7,
-      "lastAccessed": 1785360534383,
+      "accessCount": 9,
+      "lastAccessed": 1785370840021,
       "type": "file"
     },
     {
       "path": "CMakeLists.txt",
-      "accessCount": 5,
-      "lastAccessed": 1785360818517,
+      "accessCount": 8,
+      "lastAccessed": 1785370977538,
+      "type": "file"
+    },
+    {
+      "path": "web/calc.mjs",
+      "accessCount": 6,
+      "lastAccessed": 1785372638313,
       "type": "file"
     },
     {
       "path": "src/core/engine.cpp",
       "accessCount": 4,
       "lastAccessed": 1785360404174,
+      "type": "file"
+    },
+    {
+      "path": "src/main.cpp",
+      "accessCount": 4,
+      "lastAccessed": 1785370859014,
+      "type": "file"
+    },
+    {
+      "path": ".clang-format",
+      "accessCount": 4,
+      "lastAccessed": 1785371338193,
+      "type": "file"
+    },
+    {
+      "path": "web/main.cpp",
+      "accessCount": 4,
+      "lastAccessed": 1785371988999,
       "type": "file"
     },
     {
@@ -202,21 +226,27 @@
       "type": "file"
     },
     {
-      "path": "src/main.cpp",
-      "accessCount": 2,
-      "lastAccessed": 1785358375405,
-      "type": "file"
-    },
-    {
-      "path": ".clang-format",
-      "accessCount": 2,
-      "lastAccessed": 1785360190319,
-      "type": "file"
-    },
-    {
       "path": ".clang-tidy",
       "accessCount": 2,
       "lastAccessed": 1785360240124,
+      "type": "file"
+    },
+    {
+      "path": "src/ui/session.cpp",
+      "accessCount": 2,
+      "lastAccessed": 1785370818675,
+      "type": "file"
+    },
+    {
+      "path": "web/calc.css",
+      "accessCount": 2,
+      "lastAccessed": 1785371287244,
+      "type": "file"
+    },
+    {
+      "path": "web/index.html",
+      "accessCount": 2,
+      "lastAccessed": 1785371294720,
       "type": "file"
     },
     {
@@ -271,6 +301,36 @@
       "path": "tests/.clang-tidy",
       "accessCount": 1,
       "lastAccessed": 1785360611473,
+      "type": "file"
+    },
+    {
+      "path": "src/ui/url.hpp",
+      "accessCount": 1,
+      "lastAccessed": 1785370775650,
+      "type": "file"
+    },
+    {
+      "path": "src/ui/session.hpp",
+      "accessCount": 1,
+      "lastAccessed": 1785370783067,
+      "type": "file"
+    },
+    {
+      "path": "src/ui/app.hpp",
+      "accessCount": 1,
+      "lastAccessed": 1785370848235,
+      "type": "file"
+    },
+    {
+      "path": "tests/test_url.cpp",
+      "accessCount": 1,
+      "lastAccessed": 1785370871393,
+      "type": "file"
+    },
+    {
+      "path": "web/demo_buffer.hpp.in",
+      "accessCount": 1,
+      "lastAccessed": 1785370910423,
       "type": "file"
     }
   ],

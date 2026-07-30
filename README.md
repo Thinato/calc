@@ -18,6 +18,9 @@ its result is shown after it and cannot be edited.
 It behaves like a text editor rather than a prompt: move around, edit any line,
 name values and reuse them, and every result updates as you type.
 
+**[Try it in the browser](https://lisecki.dev/calc/)** — the same program compiled
+to WebAssembly, no install.
+
 ## Install
 
 ```sh
@@ -38,10 +41,32 @@ automatically, so a fresh clone needs nothing installed.
 ```sh
 cmake --preset default
 cmake --build build
-ctest --test-dir build          # 195 tests, no terminal required
+ctest --test-dir build          # 196 tests, no terminal required
 ./build/calc                    # scratch buffer
 ./build/calc notes.calc         # open a file
 ```
+
+### For the web
+
+`web/` holds a second entry point: the same core, driven one animation frame at a
+time instead of by a blocking loop, with the clipboard and `:github` going through
+the browser. It needs Emscripten (`brew install emscripten`):
+
+```sh
+emcmake cmake -B build-web -DCMAKE_BUILD_TYPE=MinSizeRel
+cmake --build build-web
+mkdir -p site && cp web/index.html web/calc.css web/calc.mjs build-web/calc.js \
+  build-web/calc.wasm site/
+python3 -m http.server 8888 --directory site
+```
+
+The build is deliberately single-threaded, which is what lets it be embedded in a
+page: a threaded build needs `SharedArrayBuffer`, and an iframe only gets that if
+the page around it is cross-origin isolated too. `web/main.cpp` says the rest.
+
+On the web `:w` and `:e` work against a filesystem that lives in the tab, so a
+save is gone on reload, and `:q` restarts on the demo buffer rather than leaving a
+dead terminal in the page.
 
 ## Checks
 
@@ -52,7 +77,7 @@ clang tools are pinned, because their output changes between major versions:
 pip install clang-format==22.1.8 clang-tidy==22.1.8
 
 # layout, then defects (-p build reads the compile database the preset exports)
-find src tests \( -name '*.cpp' -o -name '*.hpp' \) | xargs clang-format -i
+find src tests web \( -name '*.cpp' -o -name '*.hpp' \) | xargs clang-format -i
 find src tests -name '*.cpp' | xargs clang-tidy -p build
 
 # the suite twice: warnings as errors, then again under ASan and UBSan
@@ -63,6 +88,11 @@ cmake --preset debug && cmake --build build-debug && ctest --preset debug
 `.clang-tidy` keeps only the check families that look for defects — layout is
 `clang-format`'s job, and the `readability` and `modernize` families disagree with
 this codebase on purpose. Both config files say why, check by check.
+
+CI runs one more job than there are commands here: the WebAssembly build, so a
+change that only breaks the web port still fails the push. `web/` is formatted but
+not linted, because `clang-tidy -p build` reads the native compile database and
+that entry point is only ever compiled by Emscripten.
 
 ## The language
 
@@ -211,7 +241,8 @@ you type.)
 src/core/    expression language: lexer, parser, eval, environment, formatting
 src/doc/     the buffer, cursor, undo, result cache, file IO
 src/vim/     the modal editor: motions, operators, state machine, ex commands
-src/ui/      FTXUI rendering and the event loop
+src/ui/      FTXUI rendering, the session, and the terminal's event loop
+web/         the WebAssembly entry point and the page that hosts it
 ```
 
 `core`, `doc` and `vim` link only the standard library, so all of the program's

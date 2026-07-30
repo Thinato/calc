@@ -3,7 +3,18 @@ name: Release
 on:
   push:
     tags:
+      # Both spellings, because a tag filter is a glob and not a regex: 'v*' does
+      # not match '0.1.0', and a tag that matches nothing fails by doing nothing
+      # at all, which is the hardest kind of failure to notice.
       - 'v*'
+      - '[0-9]*'
+  # For a tag that already exists — a release that did not run, or one to rebuild
+  # without moving the tag.
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Existing tag to build and publish, e.g. v0.1.0 or 0.1.0'
+        required: true
 
 permissions:
   contents: write
@@ -12,6 +23,10 @@ jobs:
   build:
     name: ${{ matrix.target }}
     runs-on: ${{ matrix.os }}
+    env:
+      # A tag push knows its own name; a manual run is told one. Everything below
+      # reads this, so the two entry points cannot drift apart.
+      TAG: ${{ inputs.tag || github.ref_name }}
     strategy:
       fail-fast: false
       matrix:
@@ -33,6 +48,10 @@ jobs:
             cmake_args: -DCMAKE_OSX_DEPLOYMENT_TARGET=11.0
     steps:
       - uses: actions/checkout@v4
+        with:
+          # A tag push is already on the right commit; a manual run has to be sent
+          # to one, or it would build whatever main happens to be.
+          ref: ${{ env.TAG }}
 
       # No preset here: the presets are for working locally, and a release wants
       # Release rather than RelWithDebInfo plus the flags above. Configuring
@@ -42,7 +61,7 @@ jobs:
         run: >
           cmake -B build
           -DCMAKE_BUILD_TYPE=Release
-          -DCALC_VERSION="${GITHUB_REF_NAME#v}"
+          -DCALC_VERSION="${TAG#v}"
           ${{ matrix.cmake_args }}
 
       - name: Build
@@ -55,7 +74,7 @@ jobs:
 
       - name: Check the binary reports the tag it was built from
         run: |
-          expected="calc ${GITHUB_REF_NAME#v}"
+          expected="calc ${TAG#v}"
           got="$(./build/calc --version)"
           [ "$got" = "$expected" ] || {
             printf 'version mismatch: built %s, expected %s\n' "$got" "$expected" >&2
@@ -72,7 +91,7 @@ jobs:
       - name: Package tarball
         id: pkg
         run: |
-          name="calc-${GITHUB_REF_NAME}-${{ matrix.target }}"
+          name="calc-${TAG}-${{ matrix.target }}"
           mkdir -p "dist/${name}"
           cp build/calc "dist/${name}/"
           cp README.md "dist/${name}/"
@@ -82,5 +101,8 @@ jobs:
       - name: Upload to GitHub Release
         uses: softprops/action-gh-release@v2
         with:
+          # Stated rather than inferred: left to itself this action takes the tag
+          # from the ref that triggered the run, which on a manual run is a branch.
+          tag_name: ${{ env.TAG }}
           files: ${{ steps.pkg.outputs.artifact }}
           fail_on_unmatched_files: true

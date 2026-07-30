@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>calc.exe ~ a vim-modal calculator in your browser</title>
+<meta name="description" content="calc, a vim-modal calculator scratchpad for the terminal, compiled to WebAssembly and running in the page.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🧮</text></svg>">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@xterm/xterm@5.5.0/css/xterm.css">
+<link rel="stylesheet" href="calc.css">
+<!-- Both decisions have to be made before the first paint, so they are here and
+     not in calc.mjs: a module script runs after the document is parsed.
+     `embedded` strips the chrome the embedding page already provides, and the
+     light theme is the homepage's own setting, applied the same way it does it —
+     but only on a direct visit, since inside an iframe the parent already
+     inverts this document. -->
+<script>
+  if (window.self !== window.top) {
+    document.documentElement.classList.add('embedded');
+  } else {
+    try {
+      if (localStorage.getItem('lisecki-theme') === 'light') {
+        document.documentElement.classList.add('light-mode');
+      }
+    } catch (e) { /* private mode, no problem */ }
+  }
+</script>
+<script type="module" src="calc.mjs"></script>
+</head>
+<body>
+
+<div class="top-marquee">
+  <marquee scrollamount="7">
+    🧮 CALC.EXE ~ NOW RUNNING IN YOUR BROWSER VIA WEBASSEMBLY 🧮 * NO INSTALL REQUIRED * IT IS A VIM, BUT FOR ARITHMETIC * TYPE i TO INSERT, ESC TO STOP * 100% FREEWARE, 0% SPYWARE 💾
+  </marquee>
+</div>
+
+<div class="window" id="window">
+  <div class="titlebar">
+    <span class="dots">
+      <span class="dot close"></span>
+      <span class="dot minimize"></span>
+      <span class="dot zoom"></span>
+    </span>
+    <span class="name">C:\CALC.EXE &mdash; 100% FREEWARE</span>
+    <span class="right">640K OUGHT TO BE ENOUGH</span>
+  </div>
+  <div id="terminal"></div>
+</div>
+
+<div class="hint" id="hint">&#9658; CLICK THE TERMINAL, THEN TYPE &#9668;</div>
+
+<p class="note">
+  Every line is an expression and its result is shown after it, where you cannot
+  edit it. Move around and edit any line; everything below recomputes as you type.
+  Saving works here but the file lives in this tab only, so it is gone on reload &mdash;
+  and <code>:q</code> starts the tour over instead of leaving you a dead terminal.
+  A keyboard is required, so this one is for desktops.
+</p>
+
+<div class="legend">
+  <div><b>i a o O</b> insert &middot; <b>Esc</b> back to normal</div>
+  <div><b>h j k l</b> move &middot; <b>w b e</b> words &middot; <b>gg G</b> ends</div>
+  <div><b>dd cc yy</b> lines &middot; <b>dw d$ d2w</b> operators + motions</div>
+  <div><b>u</b> undo &middot; <b>Ctrl-R</b> redo &middot; <b>.</b> repeat</div>
+  <div><b>x = 5</b> a variable &middot; <b>RATE = 0.08</b> a constant</div>
+  <div><b>sqrt(16)</b> <b>pow(2, 10)</b> <b>2^-1</b> <b># a comment</b></div>
+  <div><b>gy</b> copy this line's result &middot; <b>gY</b> copy both sides</div>
+  <div><b>:help</b> <b>:set number</b> <b>:42</b> <b>:github</b> <b>:q</b></div>
+</div>
+
+<div id="error">
+  <b>calc did not start.</b> Its console messages say why &mdash; and it needs
+  WebAssembly, which every browser since 2017 has.
+</div>
+
+<div class="badges">
+  <span class="badge wasm">WEBASSEMBLY</span>
+  <span class="badge cpp">C++20 + FTXUI</span>
+  <span class="badge vim">VIM KEYS</span>
+  <span class="badge free">BEST IN IE5</span>
+</div>
+
+<footer>
+  <span class="blink">&#9656;</span>
+  <a href="https://github.com/Thinato/calc">source on github</a> &nbsp;|&nbsp;
+  install the real thing: <code>curl -sSf https://raw.githubusercontent.com/Thinato/calc/main/install.sh | sh</code>
+  &nbsp;|&nbsp; <a href="https://lisecki.dev/">&laquo; back to the homepage</a>
+</footer>
+
+</body>
+</html>

@@ -1,5 +1,6 @@
 #include <cstdio>
 #include <string>
+#include <utility>
 
 #include "doc/document.hpp"
 #include "doc/file.hpp"
@@ -73,5 +74,5 @@ int main(int argc, char** argv) {
     document.set_path(path);
   }
 
-  return calc::run_editor(document);
+  return calc::run_editor(std::move(document));
 }

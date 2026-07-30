@@ -1,0 +1,65 @@
+name: Web
+
+on:
+  push:
+    branches: ["main"]
+  workflow_dispatch:
+
+# Only what Pages needs: id-token is how deploy-pages proves the artifact came
+# from this run.
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# A second push while a deploy is in flight should replace it, not queue behind
+# it: the newer commit is the one anyone wants to see.
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    name: Build and deploy
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: mymindstorm/setup-emsdk@v14
+        with:
+          # Pinned for the same reason the clang tools are: a toolchain that
+          # updates itself changes the output of a build nobody touched.
+          version: 6.0.5
+          actions-cache-folder: emsdk-cache
+
+      # MinSizeRel rather than Release: this is a download before it is a program,
+      # and -Os over -O3 costs nothing anyone can feel at 60fps on a text screen.
+      # FTXUI and doctest still come from FetchContent, so nothing else to install.
+      - name: Configure
+        run: emcmake cmake -B build-web -DCMAKE_BUILD_TYPE=MinSizeRel
+
+      - name: Build
+        run: cmake --build build-web --parallel
+
+      - name: Stage the site
+        run: |
+          mkdir -p site
+          cp web/index.html web/calc.css web/calc.mjs site/
+          cp build-web/calc.js build-web/calc.wasm site/
+          ls -lh site
+
+      - uses: actions/configure-pages@v5
+        with:
+          # Turns Pages on the first time this runs, so the deploy below does not
+          # fail on a repository where nobody has visited the settings page.
+          enablement: true
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+      - id: deploy
+        uses: actions/deploy-pages@v4

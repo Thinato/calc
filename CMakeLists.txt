@@ -6,7 +6,13 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 option(CALC_SANITIZE "Build with AddressSanitizer + UndefinedBehaviorSanitizer" OFF)
-option(CALC_BUILD_TESTS "Build the test suite" ON)
+# Off for a web build: the suite is a native binary that ctest runs, and there is
+# no terminal-free reason to ship it through Emscripten.
+set(CALC_BUILD_TESTS_DEFAULT ON)
+if(EMSCRIPTEN)
+  set(CALC_BUILD_TESTS_DEFAULT OFF)
+endif()
+option(CALC_BUILD_TESTS "Build the test suite" ${CALC_BUILD_TESTS_DEFAULT})
 # Off by default: a warning should stop CI, not stop someone mid-edit on their own
 # machine. Deliberately not CMAKE_COMPILE_WARNING_AS_ERROR, which is global and
 # would also hold FTXUI to a standard this project does not set for it.
@@ -48,6 +54,19 @@ FetchContent_Declare(ftxui
 )
 FetchContent_MakeAvailable(ftxui)
 
+if(EMSCRIPTEN)
+  # FTXUI's cmake/ftxui_set_options.cmake appends "-s USE_PTHREADS" to
+  # CMAKE_CXX_FLAGS in its own directory scope, for a threaded web build this
+  # project deliberately does not want (see web/main.cpp). Our own objects never
+  # see that flag, and wasm-ld refuses to link atomics against non-atomics, so the
+  # two halves would not go together. Turn it back off for FTXUI's three
+  # libraries: target options land after CMAKE_CXX_FLAGS on the command line, and
+  # emcc takes the last -s setting it is given.
+  foreach(ftxui_target screen dom component)
+    target_compile_options(${ftxui_target} PRIVATE -sUSE_PTHREADS=0)
+  endforeach()
+endif()
+
 if(CALC_BUILD_TESTS)
   FetchContent_Declare(doctest
     GIT_REPOSITORY https://github.com/doctest/doctest.git
@@ -74,10 +93,39 @@ target_link_libraries(calc_core PRIVATE calc_warnings)
 file(GLOB_RECURSE CALC_UI_SOURCES CONFIGURE_DEPENDS
   "${CMAKE_CURRENT_SOURCE_DIR}/src/ui/*.cpp"
 )
-add_executable(calc src/main.cpp ${CALC_UI_SOURCES})
-target_compile_definitions(calc PRIVATE CALC_VERSION_STRING="${CALC_VERSION}")
-# ftxui::component transitively provides ftxui::dom and ftxui::screen.
-target_link_libraries(calc PRIVATE calc_core calc_warnings ftxui::component)
+if(EMSCRIPTEN)
+  # The buffer the page opens on, taken from the demo the repository already
+  # ships so there is one copy of the tour rather than two.
+  file(READ "${CMAKE_CURRENT_SOURCE_DIR}/examples/demo.calc" CALC_DEMO_TEXT)
+  configure_file(
+    "${CMAKE_CURRENT_SOURCE_DIR}/web/demo_buffer.hpp.in"
+    "${CMAKE_CURRENT_BINARY_DIR}/generated/web/demo_buffer.hpp"
+    @ONLY
+  )
+
+  # Named calc.js so the pair of outputs is calc.js + calc.wasm, which is what
+  # web/index.html loads.
+  add_executable(calc_web web/main.cpp ${CALC_UI_SOURCES})
+  set_target_properties(calc_web PROPERTIES OUTPUT_NAME calc SUFFIX ".js")
+  target_include_directories(calc_web PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/generated")
+  target_link_libraries(calc_web PRIVATE calc_core calc_warnings ftxui::component)
+  target_link_options(calc_web PRIVATE
+    # The heap starts small and the buffer can grow without a fixed ceiling.
+    -sALLOW_MEMORY_GROWTH=1
+    # The parser is recursive descent, and Emscripten's default 64KB stack is thin
+    # for a visitor who types "((((((...".
+    -sSTACK_SIZE=1MB
+    # doc/file.cpp uses <fstream>, and the page installs stdin/stdout handlers
+    # through FS.init, so the filesystem and FS itself both have to be present.
+    -sFORCE_FILESYSTEM=1
+    -sEXPORTED_RUNTIME_METHODS=FS
+  )
+else()
+  add_executable(calc src/main.cpp ${CALC_UI_SOURCES})
+  target_compile_definitions(calc PRIVATE CALC_VERSION_STRING="${CALC_VERSION}")
+  # ftxui::component transitively provides ftxui::dom and ftxui::screen.
+  target_link_libraries(calc PRIVATE calc_core calc_warnings ftxui::component)
+endif()
 
 # ------------------------------------------------------------------- calc_tests
 if(CALC_BUILD_TESTS)
