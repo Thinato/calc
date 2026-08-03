@@ -289,7 +289,7 @@ class Parser {
       return make_error(ErrorCode::EmptyBody, "a body needs an expression",
                         peek().column);
     }
-    return std::move(statements);
+    return statements;
   }
 
   Result<Statement> parse_body_statement() {
