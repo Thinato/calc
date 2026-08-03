@@ -1,5 +1,5 @@
 ---
-# Google's style, with two deviations that match how this codebase already reads.
+# Google's style, with three deviations that match how this codebase already reads.
 #
 # Pinned tool version: clang-format 22.1.8 (see .github/workflows/ci.yml). Layout
 # differs between major versions, so a different one will disagree with CI.
@@ -16,6 +16,11 @@ ColumnLimit: 90
 #   case 'd': return Operator::Delete;
 #   case 'c': return Operator::Change;
 AllowShortCaseLabelsOnASingleLine: true
+
+# Google adds `}  // namespace calc` to every closing brace. This codebase closes
+# its namespaces bare, so the setting has to say so — otherwise clang-format keeps
+# putting the comments back and the format check fails on every file.
+FixNamespaceComments: false
 
 # Three blocks of includes: the standard library, then what the platform or the
 # build brought in, then this project. Google's default sorts <ftxui/...> in with

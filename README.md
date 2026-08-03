@@ -41,7 +41,7 @@ automatically, so a fresh clone needs nothing installed.
 ```sh
 cmake --preset default
 cmake --build build
-ctest --test-dir build          # 196 tests, no terminal required
+ctest --test-dir build          # 227 tests, no terminal required
 ./build/calc                    # scratch buffer
 ./build/calc notes.calc         # open a file
 ```
@@ -87,7 +87,10 @@ cmake --preset debug && cmake --build build-debug && ctest --preset debug
 
 `.clang-tidy` keeps only the check families that look for defects — layout is
 `clang-format`'s job, and the `readability` and `modernize` families disagree with
-this codebase on purpose. Both config files say why, check by check.
+this codebase on purpose. Two directories narrow it further: `tests/` for a check
+that cannot see through a doctest guard, and `src/ui/` for the two that flag
+leaving the process, which is what the clipboard and `:github` do. All three
+config files say why, check by check.
 
 CI runs one more job than there are commands here: the WebAssembly build, so a
 change that only breaks the web port still fails the push. `web/` is formatted but
@@ -104,6 +107,8 @@ that entry point is only ever compiled by Emscripten.
 | `pow(a, b)` | power |
 | `sqrt(a)` | square root |
 | `name = expr` | define a variable or constant |
+| `define f(x): expr` | define a function |
+| `define f(x) { … }` | the same, with a body of several statements |
 | `#` | comment to the end of the line |
 
 Precedence is the ordinary mathematical one, so `1 + 2 * 3` is `7` and `-2^2` is
@@ -119,15 +124,21 @@ Every colour answers one question, so the screen can be read at a glance:
 | color | meaning |
 | --- | --- |
 | dimmed | a comment — prose to skim past |
-| light blue | a function: `sqrt`, `pow` |
+| light blue | a function: `sqrt`, `pow`, and the ones you define |
 | yellow | a variable, where it is defined |
 | magenta | a constant, where it is defined |
 | cyan | a result |
 | red | an error |
+| bold | `define` and `return` — structure, not a value |
 
 A name is light blue only when it really is a function, so `foo(2)` stays plain
-and agrees with the `unknown function` beside it. Only the line that *defines* a
-name colours it; later uses of `subtotal` are left alone.
+and agrees with the `unknown function` beside it. A function you define is light
+blue from the line that defines it downward, and a call written above that line
+stays plain — the colour and the error never disagree. Only the line that
+*defines* a name colours it; later uses of `subtotal` are left alone.
+
+Structure is bold rather than coloured, because each colour above answers a
+question about the value on the line, and `define` is not one of them.
 
 On a terminal without 256-colour support each shade falls back to the nearest of
 the basic sixteen.
@@ -175,6 +186,9 @@ else:
 x1 = 5  Error: invalid name 'x1': names cannot contain digits
 ```
 
+`define` and `return` are reserved words, so they are the two spellings a name
+cannot have.
+
 Names resolve **top to bottom**, like reading a script. A name works only below
 the line that defines it, so using one earlier is an `undefined name` error — and
 `x = x + 1` therefore reads as an increment. Editing a definition recomputes
@@ -184,6 +198,54 @@ A definition shows its computed value unless you typed the value out literally:
 `x = 1 + 2` gains `= 3`, while `subtotal = 128.40` shows nothing extra, because a
 number already on the line does not need restating (and `128.40` should not
 visibly become `128.4` beside itself). `gy` still yanks the value either way.
+
+## Functions
+
+Name a computation the way you name a value. Three spellings, one grammar:
+
+```
+ 1 define double(x): x * 2
+ 2 double(21) = 42
+ 3
+ 4 define hyp(a, b) { squares = a^2 + b^2; return sqrt(squares) }
+ 5 hyp(3, 4) = 5
+ 6
+ 7 define area(r) {
+ 8   PI * r^2
+ 9 }
+10 area(3) = 28.2743338823
+```
+
+The body after `:` is the rest of the line. A `{ }` body is the same thing with
+room to breathe: statements separated by `;`, or by a row break, which means the
+same. **Its value is the last statement**, so `return` is optional — and since an
+assignment already has a value here, `{ z = x * 2 }` is a body worth `2x`.
+
+A body reads the names around it **where it is called**, with the parameters
+shadowing them:
+
+```
+ 1 define with_tax(amount): amount * (1 + RATE)
+ 2 RATE = 0.0825
+ 3 with_tax(100) = 108.25
+```
+
+Two things follow from that. A body's mistake only shows up when something calls
+it, so the error appears on the calling line, named after the function that
+failed: `f(1)  Error: in f(): undefined name 'nope'`. And a body may only call
+functions that already exist above it, so a function cannot call itself — one
+that comes to anyway, through a redefinition, is stopped with `too much recursion`
+rather than taking the program down with it.
+
+Otherwise functions follow every rule names already follow. They resolve top to
+bottom, so a call above the definition is an `unknown function`. A lowercase name
+can be redefined and an ALLCAPS one cannot, by the same spelling rule as values.
+`sqrt` and `PI` are not available to take. And a definition is not a value, so
+nothing is drawn after it.
+
+While a `{` has no `}` yet, there is no block: that line says `unclosed '{'` and
+every line under it is still evaluated as itself, so opening a brace at the top
+of a long scratchpad never blanks the results below it.
 
 ## Keys
 

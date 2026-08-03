@@ -47,10 +47,28 @@ struct Node {
   std::variant<Number, Identifier, Unary, Binary, Call> kind;
 };
 
+struct FunctionDecl;
+
 struct Statement {
   std::optional<std::string> target;
   std::size_t target_column = 0;
   NodePtr expression;
+
+  std::unique_ptr<FunctionDecl> definition;
+
+  bool is_definition() const { return definition != nullptr; }
+};
+
+struct Param {
+  std::string name;
+  std::size_t column = 0;
+};
+
+struct FunctionDecl {
+  std::string name;
+  std::size_t name_column = 0;
+  std::vector<Param> params;
+  std::vector<Statement> body;
 };
 
 inline bool is_literal(const Node& node) {

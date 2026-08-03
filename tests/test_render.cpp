@@ -275,6 +275,35 @@ TEST_CASE("a function name cannot be redefined, and stays coloured as one") {
   CHECK(contains(lines, "Error: 'sqrt' is a function"));
 }
 
+TEST_CASE("a function the buffer defined is coloured from its definition down") {
+  const auto lines = render_lines(
+      "hyp(3, 4)\n"
+      "define hyp(x, y): sqrt(x^2 + y^2)\n"
+      "hyp(6, 8)",
+      "j", 60, 10);
+
+  CHECK(color_at(lines, "hyp(3, 4)") == kTerminalDefault);
+  CHECK(contains(lines, "Error: unknown function 'hyp'"));
+  CHECK(color_at(lines, "hyp(x, y)") == expected(theme::function));
+  CHECK(color_at(lines, "hyp(6, 8)") == expected(theme::function));
+  CHECK(contains(lines, "hyp(6, 8) = 10"));
+}
+
+TEST_CASE("the rows of a body are drawn as typed, with nothing added") {
+  const auto lines = render_lines(
+      "define hyp(x, y) {\n"
+      "  z = sqrt(x^2 + y^2)\n"
+      "  return z\n"
+      "}\n"
+      "hyp(3, 4)",
+      "", 60, 12);
+
+  CHECK(contains(lines, "z = sqrt(x^2 + y^2)"));
+  CHECK_FALSE(contains(lines, "z = sqrt(x^2 + y^2) ="));
+  CHECK_FALSE(contains(lines, "Error"));
+  CHECK(contains(lines, "hyp(3, 4) = 5"));
+}
+
 TEST_CASE("the status bar names the mode and the cursor position") {
   CHECK(contains(render_lines("1 + 2", ""), "NORMAL"));
   CHECK(contains(render_lines("1 + 2", "i"), "INSERT"));

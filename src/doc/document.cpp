@@ -78,9 +78,7 @@ Cursor Document::clamped(Cursor cursor, bool allow_past_end) const {
   return cursor;
 }
 
-void Document::set_cursor(Cursor cursor) {
-  cursor_ = clamped(cursor, true);
-}
+void Document::set_cursor(Cursor cursor) { cursor_ = clamped(cursor, true); }
 
 std::string Document::text_range(Cursor from, Cursor to) const {
   if (to < from) std::swap(from, to);

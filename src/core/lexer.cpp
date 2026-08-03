@@ -37,9 +37,15 @@ std::string_view describe(TokenKind kind) {
     case TokenKind::Caret: return "'^'";
     case TokenKind::LParen: return "'('";
     case TokenKind::RParen: return "')'";
+    case TokenKind::LBrace: return "'{'";
+    case TokenKind::RBrace: return "'}'";
     case TokenKind::Comma: return "','";
+    case TokenKind::Colon: return "':'";
+    case TokenKind::Semicolon: return "';'";
     case TokenKind::Equals: return "'='";
     case TokenKind::Identifier: return "a name";
+    case TokenKind::Define: return "'define'";
+    case TokenKind::Return: return "'return'";
     case TokenKind::End: return "end of line";
   }
   return "something";
@@ -114,7 +120,13 @@ Result<std::vector<Token>> tokenize(std::string_view line) {
         return invalid_name(span, start, "contain digits");
       }
 
-      token.kind = TokenKind::Identifier;
+      if (span == "define") {
+        token.kind = TokenKind::Define;
+      } else if (span == "return") {
+        token.kind = TokenKind::Return;
+      } else {
+        token.kind = TokenKind::Identifier;
+      }
       token.text = std::string(span);
       tokens.push_back(std::move(token));
       continue;
@@ -128,7 +140,11 @@ Result<std::vector<Token>> tokenize(std::string_view line) {
       case '^': token.kind = TokenKind::Caret; break;
       case '(': token.kind = TokenKind::LParen; break;
       case ')': token.kind = TokenKind::RParen; break;
+      case '{': token.kind = TokenKind::LBrace; break;
+      case '}': token.kind = TokenKind::RBrace; break;
       case ',': token.kind = TokenKind::Comma; break;
+      case ':': token.kind = TokenKind::Colon; break;
+      case ';': token.kind = TokenKind::Semicolon; break;
       case '=': token.kind = TokenKind::Equals; break;
       default:
         return make_error(ErrorCode::UnexpectedCharacter,

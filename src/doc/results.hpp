@@ -1,6 +1,10 @@
 #pragma once
 
 #include <cstddef>
+#include <functional>
+#include <map>
+#include <string>
+#include <string_view>
 #include <vector>
 
 #include "core/engine.hpp"
@@ -18,9 +22,12 @@ class ResultCache {
 
   const Environment& environment() const { return environment_; }
 
+  bool is_function_at(std::string_view name, std::size_t row) const;
+
  private:
   std::vector<LineEval> entries_;
   Environment environment_;
+  std::map<std::string, std::size_t, std::less<>> function_rows_;
   std::size_t revision_ = 0;
   bool primed_ = false;
 };
