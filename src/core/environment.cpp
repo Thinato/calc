@@ -2,8 +2,7 @@
 
 #include <algorithm>
 #include <array>
-
-#include "core/functions.hpp"
+#include <utility>
 
 namespace calc {
 namespace {
@@ -25,6 +24,8 @@ Environment::Environment() { reset(); }
 
 void Environment::reset() {
   bindings_.clear();
+  functions_.clear();
+  depth_ = 0;
   for (const BuiltinConstant& builtin : kBuiltins) {
     Binding binding;
     binding.value = builtin.value;
@@ -39,6 +40,17 @@ const Binding* Environment::find(std::string_view name) const {
   return found == bindings_.end() ? nullptr : &found->second;
 }
 
+const UserFunction* Environment::find_user_function(std::string_view name) const {
+  const auto found = functions_.find(name);
+  return found == functions_.end() ? nullptr : found->second.get();
+}
+
+Environment Environment::child_for_call() const {
+  Environment child = *this;
+  ++child.depth_;
+  return child;
+}
+
 bool Environment::is_constant_name(std::string_view name) {
   return std::none_of(name.begin(), name.end(),
                       [](char byte) { return byte >= 'a' && byte <= 'z'; });
@@ -46,7 +58,7 @@ bool Environment::is_constant_name(std::string_view name) {
 
 std::optional<Error> Environment::define(const std::string& name, Value value,
                                          std::size_t row, std::size_t column) {
-  if (find_function(name) != nullptr) {
+  if (find_function(name) != nullptr || functions_.count(name) != 0) {
     return make_error(ErrorCode::NameIsFunction, "'" + name + "' is a function", column);
   }
 
@@ -67,6 +79,39 @@ std::optional<Error> Environment::define(const std::string& name, Value value,
   binding.is_constant = is_constant_name(name);
   binding.defined_row = row;
   binding.builtin = false;
+  return std::nullopt;
+}
+
+std::optional<Error> Environment::define_function(
+    std::shared_ptr<const UserFunction> function, std::size_t column) {
+  const std::string& name = function->name;
+
+  if (find_function(name) != nullptr) {
+    return make_error(ErrorCode::NameIsFunction, "'" + name + "' is a built-in function",
+                      column);
+  }
+
+  const auto value = bindings_.find(name);
+  if (value != bindings_.end()) {
+    if (value->second.builtin) {
+      return make_error(ErrorCode::ConstantReassigned, name + " is a built-in constant",
+                        column);
+    }
+    return make_error(ErrorCode::FunctionRedefined,
+                      "'" + name + "' is a name, defined on line " +
+                          std::to_string(value->second.defined_row + 1),
+                      column);
+  }
+
+  const auto existing = functions_.find(name);
+  if (existing != functions_.end() && is_constant_name(name)) {
+    return make_error(ErrorCode::FunctionRedefined,
+                      name + " is a function, defined on line " +
+                          std::to_string(existing->second->defined_row + 1),
+                      column);
+  }
+
+  functions_[name] = std::move(function);
   return std::nullopt;
 }
 

@@ -1,12 +1,16 @@
 #include "core/eval.hpp"
 
 #include <cmath>
+#include <optional>
+#include <string>
 #include <vector>
 
 #include "core/functions.hpp"
 
 namespace calc {
 namespace {
+
+constexpr std::size_t kMaxCallDepth = 64;
 
 Result<Value> checked(Value value, std::size_t column) {
   if (std::isinf(value)) {
@@ -48,10 +52,67 @@ Result<Value> evaluate_binary(const Binary& node, const Environment& environment
   return make_error(ErrorCode::UnexpectedToken, "unsupported operator", node.column);
 }
 
+Error from_body(const Error& error, const Call& node) {
+  Error wrapped = error;
+  if (!wrapped.in_body) {
+    wrapped.message = "in " + node.name + "(): " + wrapped.message;
+    wrapped.in_body = true;
+  }
+  wrapped.column = node.column;
+  return wrapped;
+}
+
+Result<Value> evaluate_user_call(const UserFunction& function, const Call& node,
+                                 const std::vector<Value>& args,
+                                 const Environment& environment) {
+  if (environment.depth() >= kMaxCallDepth) {
+    Error error =
+        make_error(ErrorCode::TooMuchRecursion,
+                   "too much recursion in '" + function.name + "'", node.column);
+    error.in_body = true;
+    return error;
+  }
+
+  Environment scope = environment.child_for_call();
+  for (std::size_t index = 0; index < function.params.size(); ++index) {
+    const Param& param = function.params[index];
+    if (std::optional<Error> failed =
+            scope.define(param.name, args[index], function.defined_row, param.column)) {
+      return from_body(*failed, node);
+    }
+  }
+
+  Value last = 0;
+  for (const Statement& statement : function.body) {
+    Result<Value> value = evaluate(*statement.expression, scope);
+    if (!value) return from_body(value.error(), node);
+    if (statement.target.has_value()) {
+      if (std::optional<Error> failed =
+              scope.define(*statement.target, value.value(), function.defined_row,
+                           statement.target_column)) {
+        return from_body(*failed, node);
+      }
+    }
+    last = value.value();
+  }
+  return last;
+}
+
 Result<Value> evaluate_call(const Call& node, const Environment& environment) {
-  const FunctionDef* definition = find_function(node.name);
-  if (definition == nullptr) {
+  const FunctionDef* builtin = find_function(node.name);
+  const UserFunction* user =
+      builtin == nullptr ? environment.find_user_function(node.name) : nullptr;
+  if (builtin == nullptr && user == nullptr) {
     return make_error(ErrorCode::UnknownFunction, "unknown function '" + node.name + "'",
+                      node.column);
+  }
+
+  const std::size_t arity = builtin != nullptr ? builtin->arity : user->params.size();
+  if (node.args.size() != arity) {
+    return make_error(ErrorCode::WrongArity,
+                      node.name + "() takes " + std::to_string(arity) +
+                          (arity == 1 ? " argument, got " : " arguments, got ") +
+                          std::to_string(node.args.size()),
                       node.column);
   }
 
@@ -63,7 +124,9 @@ Result<Value> evaluate_call(const Call& node, const Environment& environment) {
     args.push_back(value.value());
   }
 
-  Result<Value> result = definition->apply(args, node.column);
+  Result<Value> result = user != nullptr
+                             ? evaluate_user_call(*user, node, args, environment)
+                             : builtin->apply(args, node.column);
   if (!result) return result.error();
   return checked(result.value(), node.column);
 }

@@ -3,10 +3,12 @@
 #include <cstddef>
 #include <functional>
 #include <map>
+#include <memory>
 #include <optional>
 #include <string>
 #include <string_view>
 
+#include "core/functions.hpp"
 #include "core/result.hpp"
 #include "core/value.hpp"
 
@@ -26,14 +28,22 @@ class Environment {
   void reset();
 
   const Binding* find(std::string_view name) const;
+  const UserFunction* find_user_function(std::string_view name) const;
 
   std::optional<Error> define(const std::string& name, Value value, std::size_t row,
                               std::size_t column);
+  std::optional<Error> define_function(std::shared_ptr<const UserFunction> function,
+                                       std::size_t column);
+
+  Environment child_for_call() const;
+  std::size_t depth() const { return depth_; }
 
   static bool is_constant_name(std::string_view name);
 
  private:
   std::map<std::string, Binding, std::less<>> bindings_;
+  std::map<std::string, std::shared_ptr<const UserFunction>, std::less<>> functions_;
+  std::size_t depth_ = 0;
 };
 
 }

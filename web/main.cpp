@@ -17,18 +17,19 @@ namespace calc {
 namespace {
 
 void copy_to_clipboard(const std::string& text) {
-  EM_ASM({
-    navigator.clipboard.writeText(UTF8ToString($0))
-      .catch(function(error) { console.warn("calc: clipboard refused:", error); });
-  }, text.c_str());
+  EM_ASM(
+      {
+        navigator.clipboard.writeText(UTF8ToString($0)).catch(function(error) {
+          console.warn("calc: clipboard refused:", error);
+        });
+      },
+      text.c_str());
 }
 
 void open_in_browser(const std::string& url) {
   if (!is_safe_url(url)) return;
 
-  EM_ASM({
-    window.open(UTF8ToString($0), "_blank", "noopener");
-  }, url.c_str());
+  EM_ASM({ window.open(UTF8ToString($0), "_blank", "noopener"); }, url.c_str());
 }
 
 std::unique_ptr<EditorSession> new_session() {

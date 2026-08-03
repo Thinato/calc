@@ -48,6 +48,24 @@ count = count + 1
 count = count + 1
 count = count + 1
 
+# Name a computation with define. The body is the rest of the line after
+# the colon, and the parameters are yours to name.
+define double(x): x * 2
+double(21)
+
+# A { } body is the same thing written across rows. Its value is the last
+# statement, so `return` is optional.
+define hyp(a, b) {
+  squares = a^2 + b^2
+  return sqrt(squares)
+}
+hyp(3, 4)
+
+# A body reads the names around it where it is called, so this one uses the
+# RATE defined above.
+define with_tax(amount): amount * (1 + RATE)
+with_tax(subtotal)
+
 # These lines show why they failed, beside them. Move onto one and its
 # reason hides, so editing it is not a running commentary.
 1 +

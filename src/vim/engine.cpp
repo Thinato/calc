@@ -88,7 +88,6 @@ std::optional<std::pair<Cursor, Cursor>> VimEngine::selection() const {
   return std::make_pair(low, high);
 }
 
-
 void VimEngine::feed(const Key& key) {
   if (!replaying_) {
     if (mode_ == Mode::Normal && !has_pending()) {
@@ -115,7 +114,6 @@ void VimEngine::feed(const Key& key) {
   }
   refresh_pending_keys();
 }
-
 
 bool VimEngine::has_pending() const {
   return count_ != 0 || operator_ != Operator::None || awaiting_argument_ != '\0' ||
@@ -161,7 +159,6 @@ void VimEngine::clamp_cursor_for_mode() {
       document_.clamped(document_.cursor(), allows_cursor_past_end(mode_)));
 }
 
-
 void VimEngine::store_register(const Register& value) {
   const char name = register_name_;
 
@@ -193,7 +190,6 @@ const Register& VimEngine::active_register() const {
   const auto found = registers_.find(name);
   return found == registers_.end() ? kEmpty : found->second;
 }
-
 
 bool VimEngine::handle_pending_argument(const Key& key) {
   if (awaiting_argument_ == '\0') return false;
@@ -508,7 +504,6 @@ void VimEngine::feed_normal(const Key& key) {
   }
 }
 
-
 void VimEngine::execute_motion(char key, const std::string& argument) {
   int count = count_;
   if (operator_ != Operator::None && operator_count_ > 0) {
@@ -620,7 +615,6 @@ void VimEngine::apply_operator(const Range& range) {
   }
 }
 
-
 void VimEngine::enter_insert() {
   reset_pending();
   document_.begin_change();
@@ -644,7 +638,6 @@ void VimEngine::enter_visual(Mode visual_mode) {
   mode_ = visual_mode;
   visual_anchor_ = document_.cursor();
 }
-
 
 void VimEngine::feed_insert(const Key& key) {
   switch (key.type) {
@@ -699,7 +692,6 @@ void VimEngine::feed_insert(const Key& key) {
     default: return;
   }
 }
-
 
 void VimEngine::feed_visual(const Key& key) {
   if (handle_pending_argument(key)) return;
@@ -810,7 +802,6 @@ void VimEngine::apply_visual_operator(Operator op) {
   reset_pending();
 }
 
-
 void VimEngine::feed_command_line(const Key& key) {
   switch (key.type) {
     case Key::Type::Escape:
@@ -862,7 +853,6 @@ void VimEngine::run_ex(const std::string& command) {
   }
 }
 
-
 void VimEngine::run_search(const std::string& pattern, bool forward) {
   if (!pattern.empty()) {
     last_search_ = pattern;
@@ -910,7 +900,6 @@ bool VimEngine::search_next(bool forward) {
   set_message("pattern not found: " + last_search_, true);
   return false;
 }
-
 
 void VimEngine::put(bool after) {
   const Register value = active_register();

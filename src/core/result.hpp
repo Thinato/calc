@@ -24,12 +24,21 @@ enum class ErrorCode {
   NameIsFunction,
   AssignmentTarget,
   MultipleAssignment,
+  DefineName,
+  DuplicateParameter,
+  EmptyBody,
+  ReturnNotLast,
+  ReturnOutsideBody,
+  TooMuchRecursion,
+  FunctionRedefined,
 };
 
 struct Error {
   ErrorCode code{};
   std::string message;
   std::size_t column = 0;
+
+  bool in_body = false;
 };
 
 inline Error make_error(ErrorCode code, std::string message, std::size_t column) {

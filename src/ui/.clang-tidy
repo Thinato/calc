@@ -1,0 +1,18 @@
+---
+# The root config, minus the two checks that flag leaving the process.
+InheritParentConfig: true
+
+Checks: >
+  -bugprone-command-processor,
+  -cert-env33-c
+
+# app.cpp is the one place this program shells out: `pbcopy` or `xclip` for the
+# clipboard, `open` or `xdg-open` for `:github`. The command is a fixed string
+# chosen by the platform, the URL is validated by is_safe_url and single-quoted,
+# and there is no way to reach the system clipboard or the browser without either
+# this or a dependency.
+#
+# The alternative is a NOLINT directive above each popen, which is what used to be
+# here. Turning the checks off for the directory keeps them out of the code. Nothing
+# else in src/ui/ shells out, and the checks stay on everywhere else, so a popen
+# that appears outside this directory is still reported.

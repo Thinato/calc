@@ -46,7 +46,6 @@ ErrorCode single_line_code(std::string_view line) {
 
 }
 
-
 TEST_CASE("valid names are accepted") {
   for (std::string_view name : {"x", "y", "test", "helloWorld", "xOne", "xTwo", "_x",
                                 "under_score", "TEST", "TEST_ONE", "PI"}) {
@@ -112,7 +111,6 @@ TEST_CASE("is_constant_name splits the two kinds by spelling alone") {
   CHECK_FALSE(Environment::is_constant_name("TESTa"));
 }
 
-
 TEST_CASE("the left of '=' must be a bare name") {
   CHECK(single_line_code("(x) = 5") == ErrorCode::AssignmentTarget);
   CHECK(single_line_code("1 = 2") == ErrorCode::AssignmentTarget);
@@ -140,7 +138,6 @@ TEST_CASE("an unknown function is still distinguished from a name") {
   CHECK(single_line_code("sin") == ErrorCode::UndefinedName);
 }
 
-
 TEST_CASE("PI, E and TAU are built in") {
   CHECK(evaluate_line("PI").text == "3.14159265359");
   CHECK(evaluate_line("E").text == "2.71828182846");
@@ -159,7 +156,6 @@ TEST_CASE("built-in constants cannot be reassigned") {
     CHECK(outcome.error->message.find("built-in") != std::string::npos);
   }
 }
-
 
 TEST_CASE("a name is usable on the lines below its definition") {
   const Script script("x = 5\nx * 3\nx + x");
@@ -199,7 +195,6 @@ TEST_CASE("names compose with functions and each other") {
   CHECK(script.shown(2) == "3");
   CHECK(script.shown(4) == "4.5");
 }
-
 
 TEST_CASE("a user constant cannot be reassigned") {
   const Script script("TEST = 2\nTEST * 2\nTEST = 5\nTEST * 2");
@@ -242,7 +237,6 @@ TEST_CASE("the environment records which names are constants") {
   CHECK(constant->defined_row == 1);
 }
 
-
 TEST_CASE("a definition shows its result when the value was computed") {
   const Script script("x = 1 + 2");
   CHECK(script.shown(0) == "3");
@@ -282,7 +276,6 @@ TEST_CASE("the assignment target is located for highlighting") {
   CHECK(script.line(0).assigned_column == 2);
   CHECK(script.line(0).assigned_name == "total");
 }
-
 
 TEST_CASE("editing a definition recomputes every line below it") {
   Document document = Document::from_text("x = 2\nx * 10\nx + 1");

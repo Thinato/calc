@@ -5,7 +5,7 @@
 
 namespace calc {
 
-std::vector<SyntaxSpan> syntax_spans(std::string_view line) {
+std::vector<SyntaxSpan> syntax_spans(std::string_view line, const FunctionLookup& known) {
   std::vector<SyntaxSpan> spans;
 
   std::size_t index = 0;
@@ -18,7 +18,11 @@ std::vector<SyntaxSpan> syntax_spans(std::string_view line) {
     if (is_ident_start(line[index])) {
       const std::size_t start = index;
       while (index < line.size() && is_ident_continue(line[index])) ++index;
-      if (find_function(line.substr(start, index - start)) != nullptr) {
+      const std::string_view word = line.substr(start, index - start);
+
+      if (word == "define" || word == "return") {
+        spans.push_back(SyntaxSpan{start, index, SyntaxKind::Keyword});
+      } else if (find_function(word) != nullptr || (known && known(word))) {
         spans.push_back(SyntaxSpan{start, index, SyntaxKind::Function});
       }
       continue;

@@ -19,9 +19,15 @@ enum class TokenKind {
   Caret,
   LParen,
   RParen,
+  LBrace,
+  RBrace,
   Comma,
+  Colon,
+  Semicolon,
   Equals,
   Identifier,
+  Define,
+  Return,
   End,
 };
 

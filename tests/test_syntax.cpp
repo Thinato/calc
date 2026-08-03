@@ -9,11 +9,20 @@ using namespace calc;
 
 namespace {
 
-std::string described(std::string_view line) {
+std::string_view name_of(SyntaxKind kind) {
+  switch (kind) {
+    case SyntaxKind::Comment: return "comment '";
+    case SyntaxKind::Function: return "function '";
+    case SyntaxKind::Keyword: return "keyword '";
+  }
+  return "'";
+}
+
+std::string described(std::string_view line, const FunctionLookup& known = {}) {
   std::string out;
-  for (const SyntaxSpan& span : syntax_spans(line)) {
+  for (const SyntaxSpan& span : syntax_spans(line, known)) {
     if (!out.empty()) out += ", ";
-    out += span.kind == SyntaxKind::Comment ? "comment '" : "function '";
+    out += std::string(name_of(span.kind));
     out += std::string(line.substr(span.begin, span.end - span.begin)) + "'";
   }
   return out;
@@ -82,6 +91,22 @@ TEST_CASE("spans are ascending and never overlap") {
     CHECK(spans[index].begin < spans[index].end);
     if (index > 0) CHECK(spans[index - 1].end <= spans[index].begin);
   }
+}
+
+TEST_CASE("the two reserved words are structure, not names") {
+  CHECK(described("define f(x): x ^ 2") == "keyword 'define'");
+  CHECK(described("  return z") == "keyword 'return'");
+  CHECK(described("# define f(x): x") == "comment '# define f(x): x'");
+  CHECK(described("defined") == "");
+}
+
+TEST_CASE("a function the buffer defined for itself is highlighted like a built-in") {
+  const FunctionLookup known = [](std::string_view name) { return name == "hyp"; };
+
+  CHECK(described("hyp(3, 4)", known) == "function 'hyp'");
+  CHECK(described("hyp(3, 4)") == "");
+  CHECK(described("define hyp(x, y): sqrt(x)", known) ==
+        "keyword 'define', function 'hyp', function 'sqrt'");
 }
 
 TEST_CASE("multi-byte characters do not disturb the spans") {

@@ -19,15 +19,24 @@ constexpr std::string_view kResultSeparator = " = ";
 
 constexpr std::string_view kErrorPrefix = "  Error: ";
 
-enum class CellStyle { Plain, Comment, Function, Variable, Constant, Selected, Cursor };
+enum class CellStyle {
+  Plain,
+  Comment,
+  Function,
+  Keyword,
+  Variable,
+  Constant,
+  Selected,
+  Cursor
+};
 
 Element style_run(const std::string& run, CellStyle style, Mode mode) {
   Element element = text(run);
   switch (style) {
     case CellStyle::Plain: return element;
     case CellStyle::Comment: return element | color(theme::comment());
-    case CellStyle::Function:
-      return element | color(theme::function());
+    case CellStyle::Function: return element | color(theme::function());
+    case CellStyle::Keyword: return element | bold;
     case CellStyle::Variable: return element | color(theme::variable());
     case CellStyle::Constant: return element | color(theme::constant()) | bold;
     case CellStyle::Selected: return element | inverted;
@@ -70,8 +79,11 @@ Elements styled_line(const std::string& text_line, const LineStyling& styling) {
     CellStyle style = CellStyle::Plain;
     while (span < styling.syntax.size() && styling.syntax[span].end <= index) ++span;
     if (span < styling.syntax.size() && index >= styling.syntax[span].begin) {
-      style = styling.syntax[span].kind == SyntaxKind::Comment ? CellStyle::Comment
-                                                               : CellStyle::Function;
+      switch (styling.syntax[span].kind) {
+        case SyntaxKind::Comment: style = CellStyle::Comment; break;
+        case SyntaxKind::Function: style = CellStyle::Function; break;
+        case SyntaxKind::Keyword: style = CellStyle::Keyword; break;
+      }
     }
     if (index >= styling.name_begin && index < styling.name_end) {
       style = styling.name_is_constant ? CellStyle::Constant : CellStyle::Variable;
@@ -233,7 +245,10 @@ ftxui::Element render_frame(const Document& document, const ResultCache& results
 
     LineStyling styling;
     styling.mode = engine.mode();
-    styling.syntax = syntax_spans(document.line(row));
+    styling.syntax =
+        syntax_spans(document.line(row), [&results, row](std::string_view name) {
+          return results.is_function_at(name, row);
+        });
     styling.draw_cursor = cursor_in_buffer && row == cursor.row;
     styling.cursor_column = cursor.column;
 
