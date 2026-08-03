@@ -1,7 +1,0 @@
-{
-  "tool_name": "mcp__claude-in-chrome__browser_batch",
-  "tool_input_preview": "{\"actions\":[{\"name\":\"tabs_close_mcp\",\"input\":{\"tabId\":2115935758}},{\"name\":\"navigate\",\"input\":{\"url\":\"http://localhost:8899/\",\"tabId\":2115935753}},{\"name\":\"computer\",\"input\":{\"action\":\"left_click\",\"co...",
-  "error": "[tabs_close_mcp] Closed tab 2115935758. 1 tab(s) remain.\n\nactions[1] (navigate) failed: Failed to navigate: Tab 2115935753 is not in the same group as the current tab. Valid tab IDs are: 2115935758 (1 completed, 5 remaining)",
-  "timestamp": "2026-07-30T00:46:48.467Z",
-  "retry_count": 1
-}

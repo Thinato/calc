@@ -6,3 +6,7 @@ compile_commands.json
 .DS_Store
 *.calc
 !examples/*.calc
+
+# oh-my-claudecode session state: caches, checkpoints and per-session scratch,
+# regenerated on demand and meaningless on another machine.
+.omc/
