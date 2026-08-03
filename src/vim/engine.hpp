@@ -17,8 +17,6 @@
 
 namespace calc {
 
-// A viewport adjustment the engine wants but cannot make, because only the
-// renderer knows how tall the window is.
 enum class ScrollRequest {
   None,
   HalfPageDown,
@@ -30,12 +28,6 @@ enum class ScrollRequest {
   Bottom,
 };
 
-// The modal editor.
-//
-// One idea drives the class: operators compose with motions. `dd` is not a
-// special case, it is operator `d` over a linewise "current line" motion, and
-// `d2w` is the same operator over a counted word motion. Adding a command is
-// mostly adding a table entry in motions.cpp rather than a branch here.
 class VimEngine {
  public:
   VimEngine(Document& document, const ResultCache& results);
@@ -46,33 +38,22 @@ class VimEngine {
   bool quit_requested() const { return quit_requested_; }
   bool line_numbers() const { return line_numbers_; }
 
-  // The ':' or '/' line being typed, including its leading character. Empty
-  // unless mode() is Mode::CommandLine.
   const std::string& command_line() const { return command_line_; }
   const std::string& message() const { return message_; }
   bool message_is_error() const { return message_is_error_; }
-  // A partially typed command such as "2d", shown in the ruler.
   const std::string& pending_keys() const { return pending_keys_; }
 
-  // The visual selection, normalized low-to-high and inclusive of both ends.
-  // Empty outside the visual modes.
   std::optional<std::pair<Cursor, Cursor>> selection() const;
 
   void set_message(std::string text, bool is_error);
   void clear_message();
 
-  // Contents of a register; '"' is the unnamed one. Empty if never written.
   const Register& register_value(char name) const;
 
   ScrollRequest take_scroll_request();
 
-  // Called with text destined for the system clipboard, for the "+ and "*
-  // registers and `gy`. Injected so this layer stays free of platform calls.
   void set_clipboard_writer(std::function<void(const std::string&)> writer);
 
-  // Called with a URL to show in a browser, for :github. Injected for the same
-  // reason as the clipboard: opening one means launching another program, and
-  // this layer knows nothing of the platform it is on.
   void set_url_opener(std::function<void(const std::string&)> opener);
 
  private:
@@ -123,19 +104,18 @@ class VimEngine {
   bool quit_requested_ = false;
   bool line_numbers_ = true;
 
-  // Pending-command state. Together these are the whole parser for normal mode.
-  int count_ = 0;  // 0 means the user typed no count
+  int count_ = 0;
   Operator operator_ = Operator::None;
-  char operator_key_ = '\0';  // so a doubled key (dd, yy) is recognizable
+  char operator_key_ = '\0';
   int operator_count_ = 0;
   char register_name_ = '\0';
-  char awaiting_argument_ = '\0';  // motion or command waiting for one character
+  char awaiting_argument_ = '\0';
   bool awaiting_register_ = false;
   bool pending_g_ = false;
   bool pending_z_ = false;
   std::string pending_keys_;
 
-  std::size_t desired_column_ = 0;  // remembered column for j and k
+  std::size_t desired_column_ = 0;
   Cursor visual_anchor_;
 
   std::map<char, Register> registers_;
@@ -147,9 +127,6 @@ class VimEngine {
   std::string last_search_;
   bool last_search_forward_ = true;
 
-  // `.` replays the keys of the last command that changed the buffer. Replaying
-  // keystrokes rather than reifying commands keeps every command repeatable for
-  // free, including a whole insert session.
   std::vector<Key> command_keys_;
   std::vector<Key> last_change_;
   std::size_t command_revision_ = 0;
@@ -160,4 +137,4 @@ class VimEngine {
   std::function<void(const std::string&)> url_opener_;
 };
 
-}  // namespace calc
+}

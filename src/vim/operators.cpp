@@ -23,8 +23,6 @@ Range resolve_range(const Document& document, Cursor start, const MotionResult& 
   Cursor to = motion.target;
   if (to < from) std::swap(from, to);
 
-  // An inclusive motion covers the character it landed on, so push the end one
-  // character past it.
   if (motion.kind == MotionKind::CharwiseInclusive) {
     to.column = utf8::next_boundary(document.line(to.row), to.column);
   }
@@ -34,4 +32,4 @@ Range resolve_range(const Document& document, Cursor start, const MotionResult& 
   return range;
 }
 
-}  // namespace calc
+}

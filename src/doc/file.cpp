@@ -48,4 +48,4 @@ std::string write_file(const std::string& path, const std::string& contents) {
   return {};
 }
 
-}  // namespace calc
+}

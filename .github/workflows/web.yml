@@ -51,12 +51,13 @@ jobs:
           cp build-web/calc.js build-web/calc.wasm site/
           ls -lh site
 
-      - uses: actions/configure-pages@v5
-        with:
-          # Turns Pages on the first time this runs, so the deploy below does not
-          # fail on a repository where nobody has visited the settings page.
-          enablement: true
-
+      # No configure-pages step here. Its only use would be `enablement: true`,
+      # and GITHUB_TOKEN may not create a Pages site — only deploy to one that
+      # exists — so it fails with "Resource not accessible by integration".
+      # Enabling Pages is a one-time thing on the repository itself:
+      #   Settings -> Pages -> Source: GitHub Actions
+      # or once, from a shell:
+      #   gh api -X POST repos/Thinato/calc/pages -f build_type=workflow
       - uses: actions/upload-pages-artifact@v3
         with:
           path: site

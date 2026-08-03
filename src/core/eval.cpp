@@ -8,8 +8,6 @@
 namespace calc {
 namespace {
 
-// Every arithmetic step funnels through here so an overflow is reported where
-// it happened rather than surfacing as "inf" in the result column.
 Result<Value> checked(Value value, std::size_t column) {
   if (std::isinf(value)) {
     return make_error(ErrorCode::NotFinite, "result is too large", column);
@@ -70,7 +68,7 @@ Result<Value> evaluate_call(const Call& node, const Environment& environment) {
   return checked(result.value(), node.column);
 }
 
-}  // namespace
+}
 
 Result<Value> evaluate(const Node& node, const Environment& environment) {
   if (const auto* number = std::get_if<Number>(&node.kind)) {
@@ -79,8 +77,6 @@ Result<Value> evaluate(const Node& node, const Environment& environment) {
   if (const auto* identifier = std::get_if<Identifier>(&node.kind)) {
     const Binding* binding = environment.find(identifier->name);
     if (binding == nullptr) {
-      // Names flow top to bottom, so this also covers using a name before the
-      // line that defines it.
       return make_error(ErrorCode::UndefinedName,
                         "undefined name '" + identifier->name + "'", identifier->column);
     }
@@ -97,4 +93,4 @@ Result<Value> evaluate(const Node& node, const Environment& environment) {
   return evaluate_call(std::get<Call>(node.kind), environment);
 }
 
-}  // namespace calc
+}

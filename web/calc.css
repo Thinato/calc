@@ -1,4 +1,3 @@
-/* ============================================================
    CALC.EXE  ::  the web build's page chrome
    Same ANSI-16 palette and fonts as lisecki.dev, so the iframe
    on the homepage looks like part of the site.
@@ -25,7 +24,6 @@
   --ansi-bright-white:   #ffffff;
 }
 
-/* The homepage's own toggle, for a visitor who came here directly. When this page
    is inside an iframe the parent's filter already inverts us, so calc.mjs only
    sets the class on a top-level visit — inverting twice would cancel out. */
 html.light-mode {
@@ -43,7 +41,6 @@ body {
   overflow-x: hidden;
 }
 
-/* ---------------------------------------------------------- marquee */
 .top-marquee {
   background: repeating-linear-gradient(
     90deg,
@@ -62,7 +59,6 @@ body {
   border-bottom: 4px ridge var(--ansi-bright-yellow);
 }
 
-/* Inside an iframe the page around us has already introduced calc and drawn its
    own window frame, so everything but the terminal would be said twice. Only the
    focus hint stays: a visitor whose keys go nowhere needs to be told why. */
 html.embedded body { padding: 0; }
@@ -90,7 +86,6 @@ html.embedded .hint {
   font-size: 18px;
 }
 
-/* ---------------------------------------------------------- fake window */
 .window {
   max-width: 980px;
   margin: 0 auto;
@@ -129,7 +124,6 @@ html.embedded .hint {
 .titlebar .name { flex: 1 1 auto; }
 .titlebar .right { flex: 0 0 auto; color: var(--ansi-bright-yellow); }
 
-/* The terminal itself keeps a real monospace font: VT323 has no box-drawing
    glyphs, and calc draws its separator with them. */
 #terminal {
   height: 62vh;
@@ -138,12 +132,10 @@ html.embedded .hint {
   font-family: 'Cascadia Mono', 'DejaVu Sans Mono', Menlo, Consolas, monospace;
 }
 
-/* A visitor has to click before the keyboard goes anywhere, so say when it has. */
 .window.focused {
   border-color: var(--ansi-bright-green);
 }
 
-/* ---------------------------------------------------------- below the window */
 .hint {
   margin: 14px auto 4px auto;
   font-size: 24px;
@@ -213,7 +205,6 @@ code {
   to { visibility: hidden; }
 }
 
-/* A page that never loads is worse than one that says so. */
 #error {
   display: none;
   max-width: 900px;

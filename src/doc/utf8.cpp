@@ -33,4 +33,4 @@ std::size_t chars_before(std::string_view text, std::size_t index) {
   return count_chars(text.substr(0, index));
 }
 
-}  // namespace calc::utf8
+}

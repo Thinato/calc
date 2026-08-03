@@ -6,9 +6,6 @@
 
 using namespace calc;
 
-// The gate in front of every opener: `:github` passes a constant today, so these
-// cases are about what a later caller cannot smuggle through — a shell
-// metacharacter on the terminal side, a script URL on the web side.
 TEST_CASE("a URL is safe only if it is https and one plain word") {
   CHECK(is_safe_url("https://github.com/Thinato/calc"));
   CHECK(is_safe_url("https://example.com"));
@@ -19,7 +16,6 @@ TEST_CASE("a URL is safe only if it is https and one plain word") {
     CHECK_FALSE(is_safe_url("javascript:alert(1)"));
     CHECK_FALSE(is_safe_url("file:///etc/passwd"));
     CHECK_FALSE(is_safe_url(""));
-    // Not a prefix match anywhere in the string: it has to start the URL.
     CHECK_FALSE(is_safe_url("x https://example.com"));
   }
 

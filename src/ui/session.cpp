@@ -13,9 +13,6 @@
 namespace calc {
 namespace {
 
-// Translates a terminal event into the engine's own key type. Specials are
-// matched before the control letters because several overlap: Tab is Ctrl-I and
-// Return is Ctrl-M at the byte level.
 std::optional<Key> to_key(const ftxui::Event& event) {
   using ftxui::Event;
 
@@ -43,7 +40,7 @@ std::optional<Key> to_key(const ftxui::Event& event) {
   return std::nullopt;
 }
 
-}  // namespace
+}
 
 EditorSession::EditorSession(Document initial)
     : document(std::move(initial)), engine(document, results) {}
@@ -61,8 +58,6 @@ ftxui::Component make_view(SessionRef session, ftxui::ScreenInteractive& screen,
     return render_frame(active.document, active.results, active.engine, active.viewport);
   });
 
-  // `session` is copied into the renderer above and moved into the handler here:
-  // both need it, and only one of them can have the original.
   view |= ftxui::CatchEvent([session = std::move(session),
                              on_quit = std::move(on_quit)](const ftxui::Event& event) {
     const std::optional<Key> key = to_key(event);
@@ -76,4 +71,4 @@ ftxui::Component make_view(SessionRef session, ftxui::ScreenInteractive& screen,
   return view;
 }
 
-}  // namespace calc
+}

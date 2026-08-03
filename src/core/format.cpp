@@ -7,13 +7,12 @@ namespace calc {
 
 std::string format_value(Value value) {
   if (!std::isfinite(value)) return {};
-  if (value == 0) return "0";  // also collapses -0
+  if (value == 0) return "0";
 
   char buffer[64];
   std::snprintf(buffer, sizeof buffer, "%.12g", value);
   std::string text(buffer);
 
-  // Split off an exponent so trimming only touches the mantissa.
   const std::size_t exponent = text.find('e');
   std::string mantissa = text.substr(0, exponent);
   const std::string suffix =
@@ -26,4 +25,4 @@ std::string format_value(Value value) {
   return mantissa + suffix;
 }
 
-}  // namespace calc
+}

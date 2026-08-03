@@ -29,7 +29,7 @@ constexpr std::array kFunctions = {
     FunctionDef{"pow", 2, &apply_pow},
 };
 
-}  // namespace
+}
 
 const FunctionDef* find_function(std::string_view name) {
   for (const FunctionDef& def : kFunctions) {
@@ -38,4 +38,4 @@ const FunctionDef* find_function(std::string_view name) {
   return nullptr;
 }
 
-}  // namespace calc
+}

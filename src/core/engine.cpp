@@ -27,9 +27,6 @@ LineEval evaluate_line(std::string_view line, Environment& environment, std::siz
     return outcome;
   }
 
-  // Bound once rather than calling statement.value() at every use: it reads
-  // better, and it lets a reader — or a static analyser — see that the target
-  // checked below is the same optional that is dereferenced.
   const Statement& parsed = statement.value();
 
   Result<Value> value = evaluate(*parsed.expression, environment);
@@ -43,8 +40,6 @@ LineEval evaluate_line(std::string_view line, Environment& environment, std::siz
     std::optional<Error> failed =
         environment.define(name, value.value(), row, parsed.target_column);
     if (failed) {
-      // The binding keeps whatever it already held, so the lines below still see
-      // the value the constant was first given.
       outcome.error = std::move(*failed);
       return outcome;
     }
@@ -64,4 +59,4 @@ LineEval evaluate_line(std::string_view line) {
   return evaluate_line(line, environment, 0);
 }
 
-}  // namespace calc
+}

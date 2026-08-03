@@ -13,15 +13,13 @@ struct BuiltinConstant {
   Value value;
 };
 
-// Adding one here is the whole job, in the same spirit as the function table in
-// functions.cpp.
 constexpr std::array kBuiltins = {
     BuiltinConstant{"PI", 3.14159265358979323846},
     BuiltinConstant{"E", 2.71828182845904523536},
     BuiltinConstant{"TAU", 6.28318530717958647692},
 };
 
-}  // namespace
+}
 
 Environment::Environment() { reset(); }
 
@@ -58,7 +56,6 @@ std::optional<Error> Environment::define(const std::string& name, Value value,
       return make_error(ErrorCode::ConstantReassigned, name + " is a built-in constant",
                         column);
     }
-    // Naming the defining line is what makes this error actionable.
     return make_error(ErrorCode::ConstantReassigned,
                       name + " is a constant, defined on line " +
                           std::to_string(existing->second.defined_row + 1),
@@ -73,4 +70,4 @@ std::optional<Error> Environment::define(const std::string& name, Value value,
   return std::nullopt;
 }
 
-}  // namespace calc
+}

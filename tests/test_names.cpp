@@ -13,8 +13,6 @@ using namespace calc;
 
 namespace {
 
-// Evaluates a whole file the way the editor does: one top-to-bottom pass with a
-// single environment.
 class Script {
  public:
   explicit Script(std::string_view text) : document_(Document::from_text(text)) {
@@ -46,9 +44,8 @@ ErrorCode single_line_code(std::string_view line) {
   return outcome.error->code;
 }
 
-}  // namespace
+}
 
-// ------------------------------------------------------------------ name rules
 
 TEST_CASE("valid names are accepted") {
   for (std::string_view name : {"x", "y", "test", "helloWorld", "xOne", "xTwo", "_x",
@@ -56,8 +53,6 @@ TEST_CASE("valid names are accepted") {
     CAPTURE(name);
     const std::string line = std::string(name) + " = 2";
     const LineEval outcome = evaluate_line(line);
-    // PI is a built-in constant, so it is the one name here that cannot be
-    // assigned; every other name must be usable.
     if (name == "PI") {
       CHECK(outcome.error.has_value());
     } else {
@@ -90,15 +85,12 @@ TEST_CASE("names cannot contain a dot") {
 TEST_CASE("a malformed name is quoted whole, with its column") {
   const LineEval outcome = evaluate_line("1 + x1 * 2");
   REQUIRE(outcome.error.has_value());
-  // The message names what the user actually typed, rather than reporting a
-  // stray number left over from splitting "x1" apart.
   CHECK(outcome.error->message.find("'x1'") != std::string::npos);
   CHECK(outcome.error->message.find("digits") != std::string::npos);
   CHECK(outcome.error->column == 4);
 }
 
 TEST_CASE("valid numbers still lex") {
-  // The new rules must not disturb ordinary numbers.
   CHECK(evaluate_line("1e5").text == "100000");
   CHECK(evaluate_line("1.5e-3").text == "0.0015");
   CHECK(evaluate_line(".5 + .5").text == "1");
@@ -111,7 +103,7 @@ TEST_CASE("is_constant_name splits the two kinds by spelling alone") {
   CHECK(Environment::is_constant_name("TAU"));
   CHECK(Environment::is_constant_name("TEST"));
   CHECK(Environment::is_constant_name("TEST_ONE"));
-  CHECK(Environment::is_constant_name("_"));  // degenerate, but a constant
+  CHECK(Environment::is_constant_name("_"));
 
   CHECK_FALSE(Environment::is_constant_name("x"));
   CHECK_FALSE(Environment::is_constant_name("test"));
@@ -120,7 +112,6 @@ TEST_CASE("is_constant_name splits the two kinds by spelling alone") {
   CHECK_FALSE(Environment::is_constant_name("TESTa"));
 }
 
-// ------------------------------------------------------------ assignment form
 
 TEST_CASE("the left of '=' must be a bare name") {
   CHECK(single_line_code("(x) = 5") == ErrorCode::AssignmentTarget);
@@ -146,11 +137,9 @@ TEST_CASE("an incomplete assignment reports the missing value") {
 TEST_CASE("an unknown function is still distinguished from a name") {
   CHECK(single_line_code("sin(1)") == ErrorCode::UnknownFunction);
   CHECK(single_line_code("sqrt 16") == ErrorCode::ExpectedCallParen);
-  // A bare name that is not a function is a name, not a botched call.
   CHECK(single_line_code("sin") == ErrorCode::UndefinedName);
 }
 
-// ------------------------------------------------------------------ built-ins
 
 TEST_CASE("PI, E and TAU are built in") {
   CHECK(evaluate_line("PI").text == "3.14159265359");
@@ -171,7 +160,6 @@ TEST_CASE("built-in constants cannot be reassigned") {
   }
 }
 
-// -------------------------------------------------------------------- scoping
 
 TEST_CASE("a name is usable on the lines below its definition") {
   const Script script("x = 5\nx * 3\nx + x");
@@ -212,7 +200,6 @@ TEST_CASE("names compose with functions and each other") {
   CHECK(script.shown(4) == "4.5");
 }
 
-// ------------------------------------------------------------------ constants
 
 TEST_CASE("a user constant cannot be reassigned") {
   const Script script("TEST = 2\nTEST * 2\nTEST = 5\nTEST * 2");
@@ -220,11 +207,9 @@ TEST_CASE("a user constant cannot be reassigned") {
   CHECK(script.shown(1) == "4");
 
   CHECK(script.code(2) == ErrorCode::ConstantReassigned);
-  // The error names where the constant came from, which is what makes it useful.
   CHECK(script.message(2).find("line 1") != std::string::npos);
   CHECK(script.message(2).find("TEST") != std::string::npos);
 
-  // The first value survives the rejected reassignment.
   CHECK(script.shown(3) == "4");
 }
 
@@ -242,7 +227,7 @@ TEST_CASE("the reassignment error names the right line") {
 TEST_CASE("a constant and a variable of similar spelling are different names") {
   const Script script("TEST = 2\ntest = 3\nTEST + test\ntest = 4\ntest");
   CHECK(script.shown(2) == "5");
-  CHECK_FALSE(script.failed(3));  // the lowercase one is a variable
+  CHECK_FALSE(script.failed(3));
   CHECK(script.shown(4) == "4");
 }
 
@@ -257,7 +242,6 @@ TEST_CASE("the environment records which names are constants") {
   CHECK(constant->defined_row == 1);
 }
 
-// --------------------------------------------------------------- what is shown
 
 TEST_CASE("a definition shows its result when the value was computed") {
   const Script script("x = 1 + 2");
@@ -268,15 +252,11 @@ TEST_CASE("a definition shows its result when the value was computed") {
 }
 
 TEST_CASE("a definition stays quiet when the value was typed literally") {
-  // Nothing is gained by restating a number that is already on the line, and
-  // reformatting 128.40 to 128.4 next to it would be worse than nothing.
-  // Redundant parentheses fold away, so those count as literal too.
   for (std::string_view line :
        {"x = 5", "x = 128.40", "x = -5", "x = 1e3", "x = (5)", "x = -(5)"}) {
     CAPTURE(line);
     const Script script(line);
     CHECK_FALSE(script.line(0).show_result);
-    // The value is still known, so `gy` can yank it.
     CHECK(script.line(0).has_result());
   }
 }
@@ -303,7 +283,6 @@ TEST_CASE("the assignment target is located for highlighting") {
   CHECK(script.line(0).assigned_name == "total");
 }
 
-// ------------------------------------------------------------- recomputation
 
 TEST_CASE("editing a definition recomputes every line below it") {
   Document document = Document::from_text("x = 2\nx * 10\nx + 1");
@@ -348,7 +327,6 @@ TEST_CASE("moving a definition below its use breaks it again") {
   results.refresh(document);
   REQUIRE(results.at(1).text == "12");
 
-  // Swap the two lines.
   document.replace_line(0, "x * 3");
   document.replace_line(1, "x = 4");
   results.refresh(document);
@@ -370,7 +348,7 @@ TEST_CASE("the worked example from the brief") {
       "subtotal * RATE\n"
       "subtotal + tip");
 
-  CHECK_FALSE(script.line(0).show_result);  // typed literally
+  CHECK_FALSE(script.line(0).show_result);
   CHECK_FALSE(script.line(1).show_result);
   CHECK(script.shown(2) == "25.68");
   CHECK(script.shown(3) == "10.593");

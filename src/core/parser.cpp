@@ -9,8 +9,6 @@
 namespace calc {
 namespace {
 
-// Binding powers. Unary sits between '*' and '^' so that -2^2 parses as
-// -(2^2), matching ordinary mathematical notation.
 constexpr int kPrecAdditive = 10;
 constexpr int kPrecMultiplicative = 20;
 constexpr int kPrecUnary = 25;
@@ -104,10 +102,6 @@ class Parser {
     }
 
     if (token.kind == TokenKind::Identifier) {
-      // A name followed by '(' is a call attempt, even an unknown one, so that
-      // `sin(1)` reports "unknown function" rather than "unexpected '('". A
-      // known function name without '(' also routes to parse_call, which asks
-      // for the missing parenthesis. Anything else is a variable or constant.
       const bool looks_like_call = tokens_[position_ + 1].kind == TokenKind::LParen;
       if (looks_like_call || find_function(token.text) != nullptr) return parse_call();
       advance();
@@ -165,7 +159,7 @@ class Parser {
   std::size_t position_ = 0;
 };
 
-}  // namespace
+}
 
 Result<NodePtr> parse(const std::vector<Token>& tokens) {
   return Parser(tokens).parse_line();
@@ -178,8 +172,6 @@ Result<NodePtr> parse(std::string_view line) {
 }
 
 Result<Statement> parse_statement(const std::vector<Token>& tokens) {
-  // Locate the assignment '=' at paren depth zero. A second one at that depth
-  // means a chained assignment, which the language does not have.
   constexpr std::size_t kNone = static_cast<std::size_t>(-1);
   std::size_t equals = kNone;
   std::size_t second_equals = kNone;
@@ -221,8 +213,6 @@ Result<Statement> parse_statement(const std::vector<Token>& tokens) {
                       tokens[equals].column);
   }
 
-  // Everything after the '=' is the value, including the trailing End token that
-  // the expression parser needs to see.
   const std::vector<Token> value(tokens.begin() + static_cast<std::ptrdiff_t>(equals) + 1,
                                  tokens.end());
   Result<NodePtr> expression = parse(value);
@@ -237,4 +227,4 @@ Result<Statement> parse_statement(std::string_view line) {
   return parse_statement(tokens.value());
 }
 
-}  // namespace calc
+}

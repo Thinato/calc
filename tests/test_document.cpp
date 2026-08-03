@@ -42,15 +42,15 @@ TEST_CASE("the cursor can never leave the typed text") {
   SUBCASE("a column past the end of a line is pulled back") {
     document.set_cursor(Cursor{1, 99});
     CHECK(document.cursor().row == 1);
-    CHECK(document.cursor().column == 2);  // one past 'b', the insert limit
+    CHECK(document.cursor().column == 2);
   }
   SUBCASE("a row past the end of the buffer is pulled back") {
     document.set_cursor(Cursor{99, 0});
     CHECK(document.cursor().row == 1);
   }
   SUBCASE("normal mode stops on the last character, not past it") {
-    CHECK(document.clamped(Cursor{1, 99}, false).column == 1);  // on 'b'
-    CHECK(document.clamped(Cursor{1, 99}, true).column == 2);   // after 'b'
+    CHECK(document.clamped(Cursor{1, 99}, false).column == 1);
+    CHECK(document.clamped(Cursor{1, 99}, true).column == 2);
   }
   SUBCASE("an empty line clamps to column zero either way") {
     Document blank = Document::from_text("\n");
@@ -61,7 +61,6 @@ TEST_CASE("the cursor can never leave the typed text") {
 
 TEST_CASE("the cursor never lands inside a multi-byte character") {
   Document document = Document::from_text("# café\n");
-  // 'é' occupies two bytes, so column 6 is its continuation byte.
   const Cursor clamped = document.clamped(Cursor{0, 6}, true);
   CHECK(clamped.column == 5);
 }
@@ -136,7 +135,7 @@ TEST_CASE("the revision counter moves on every mutation") {
   Document document = Document::from_text("1\n");
   const std::size_t before = document.revision();
   document.set_cursor(Cursor{0, 0});
-  CHECK(document.revision() == before);  // moving the cursor is not a change
+  CHECK(document.revision() == before);
   document.insert_text(Cursor{0, 1}, "2");
   CHECK(document.revision() != before);
 }
@@ -147,9 +146,9 @@ TEST_CASE("the result cache follows the text it was built from") {
   results.refresh(document);
 
   CHECK(results.at(0).text == "3");
-  CHECK_FALSE(results.at(1).has_result());  // not an expression
+  CHECK_FALSE(results.at(1).has_result());
   CHECK(results.at(1).error.has_value());
-  CHECK_FALSE(results.at(2).has_result());  // blank line
+  CHECK_FALSE(results.at(2).has_result());
   CHECK_FALSE(results.at(2).error.has_value());
 
   document.replace_line(0, "2 * 21");
@@ -165,5 +164,5 @@ TEST_CASE("the result cache re-evaluates when lines shift") {
 
   document.erase_lines(0, 1);
   results.refresh(document);
-  CHECK(results.at(0).text == "4");  // row 0 is now the old row 1
+  CHECK(results.at(0).text == "4");
 }

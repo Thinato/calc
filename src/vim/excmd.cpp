@@ -11,7 +11,6 @@ namespace {
 constexpr std::string_view kUnsavedChanges =
     "no write since last change (add ! to override)";
 
-// Where :github goes.
 constexpr std::string_view kProjectUrl = "https://github.com/Thinato/calc";
 
 std::string_view trim(std::string_view text) {
@@ -60,8 +59,6 @@ ExOutcome do_write(Document& document, const Parsed& parsed, bool then_quit) {
   const std::string path = parsed.argument.empty() ? document.path() : parsed.argument;
   if (path.empty()) return failure("no file name");
 
-  // to_text() serializes the typed lines only; results live outside the
-  // document and therefore cannot reach the file.
   const std::string error = write_file(path, document.to_text());
   if (!error.empty()) return failure(error);
 
@@ -105,13 +102,12 @@ ExOutcome do_set(const Parsed& parsed) {
   return failure("unknown option: " + option);
 }
 
-}  // namespace
+}
 
 ExOutcome execute_ex_command(std::string_view command, Document& document) {
   const std::string_view text = trim(command);
   if (text.empty()) return {};
 
-  // `:42` jumps to a line.
   if (all_digits(text)) {
     ExOutcome outcome;
     const std::size_t line = static_cast<std::size_t>(std::stoul(std::string(text)));
@@ -143,8 +139,6 @@ ExOutcome execute_ex_command(std::string_view command, Document& document) {
   if (parsed.name == "github") {
     ExOutcome outcome;
     outcome.open_url = std::string(kProjectUrl);
-    // Said out loud because the browser may take a moment to come up, and
-    // because it names where you are about to be sent.
     outcome.message = "opening " + std::string(kProjectUrl);
     return outcome;
   }
@@ -159,4 +153,4 @@ ExOutcome execute_ex_command(std::string_view command, Document& document) {
   return failure("not an editor command: " + std::string(text));
 }
 
-}  // namespace calc
+}

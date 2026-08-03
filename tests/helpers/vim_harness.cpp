@@ -31,7 +31,7 @@ const std::map<std::string, Key>& named_keys() {
   return kKeys;
 }
 
-}  // namespace
+}
 
 std::vector<Key> parse_keys(std::string_view script) {
   std::vector<Key> keys;
@@ -50,7 +50,6 @@ std::vector<Key> parse_keys(std::string_view script) {
         }
       }
     }
-    // A whole UTF-8 character, so multi-byte input can be scripted too.
     std::size_t length = 1;
     while (index + length < script.size() &&
            (static_cast<unsigned char>(script[index + length]) & 0xC0) == 0x80) {
@@ -70,8 +69,6 @@ Outcome apply(std::string_view initial, std::string_view script) {
 
   for (const Key& key : parse_keys(script)) {
     engine.feed(key);
-    // The renderer refreshes results once per frame; mirror that so commands
-    // that read a result (gy) see current values.
     results.refresh(document);
   }
 
@@ -90,4 +87,4 @@ Outcome apply(std::string_view initial, std::string_view script) {
   return outcome;
 }
 
-}  // namespace calc::test
+}

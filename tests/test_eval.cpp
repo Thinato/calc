@@ -9,7 +9,6 @@ using namespace calc;
 
 namespace {
 
-// The user-visible contract: a line of text in, the text shown after "= " out.
 std::string shown(std::string_view line) {
   const LineEval outcome = evaluate_line(line);
   return outcome.text;
@@ -21,7 +20,7 @@ ErrorCode error_code_for(std::string_view line) {
   return outcome.error->code;
 }
 
-}  // namespace
+}
 
 TEST_CASE("the examples from the brief") {
   CHECK(shown("1 + 2") == "3");
@@ -116,12 +115,10 @@ TEST_CASE("arithmetic errors") {
 TEST_CASE("error columns point at the offending character") {
   const LineEval outcome = evaluate_line("10 + 1 / 0");
   REQUIRE(outcome.error.has_value());
-  CHECK(outcome.error->column == 7);  // the '/'
+  CHECK(outcome.error->column == 7);
 }
 
 TEST_CASE("results round-trip through the display format") {
-  // Whatever is shown must parse back to the same value, so a user can copy a
-  // result into another line.
   for (std::string_view line : {"2 ^ 100", "1 / 3", "0.1 + 0.2", "1 + 2"}) {
     CAPTURE(line);
     const LineEval first = evaluate_line(line);

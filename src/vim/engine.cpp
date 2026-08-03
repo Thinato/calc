@@ -53,7 +53,7 @@ Operator operator_for(char key) {
   }
 }
 
-}  // namespace
+}
 
 VimEngine::VimEngine(Document& document, const ResultCache& results)
     : document_(document), results_(results) {}
@@ -88,17 +88,11 @@ std::optional<std::pair<Cursor, Cursor>> VimEngine::selection() const {
   return std::make_pair(low, high);
 }
 
-// ---------------------------------------------------------------- entry point
 
 void VimEngine::feed(const Key& key) {
-  // Accumulate the keys of the current command so `.` can replay it. A command
-  // boundary is "back in normal mode with nothing pending".
   if (!replaying_) {
     if (mode_ == Mode::Normal && !has_pending()) {
       command_keys_.clear();
-      // The revision is sampled at the start of the whole command, not of this
-      // keystroke: the Esc that ends an insert session changes nothing by
-      // itself, so a per-keystroke comparison would never record the insert.
       command_revision_ = document_.revision();
     }
     command_keys_.push_back(key);
@@ -122,7 +116,6 @@ void VimEngine::feed(const Key& key) {
   refresh_pending_keys();
 }
 
-// ------------------------------------------------------------- pending state
 
 bool VimEngine::has_pending() const {
   return count_ != 0 || operator_ != Operator::None || awaiting_argument_ != '\0' ||
@@ -168,7 +161,6 @@ void VimEngine::clamp_cursor_for_mode() {
       document_.clamped(document_.cursor(), allows_cursor_past_end(mode_)));
 }
 
-// ------------------------------------------------------------------ registers
 
 void VimEngine::store_register(const Register& value) {
   const char name = register_name_;
@@ -176,7 +168,6 @@ void VimEngine::store_register(const Register& value) {
   if (name == '+' || name == '*') {
     if (clipboard_writer_) clipboard_writer_(value.text);
   } else if (name >= 'A' && name <= 'Z') {
-    // An uppercase register name appends, as in vim.
     Register& target = registers_[static_cast<char>(name - 'A' + 'a')];
     target.text += value.text;
     target.linewise = value.linewise;
@@ -203,7 +194,6 @@ const Register& VimEngine::active_register() const {
   return found == registers_.end() ? kEmpty : found->second;
 }
 
-// --------------------------------------------------------------- normal mode
 
 bool VimEngine::handle_pending_argument(const Key& key) {
   if (awaiting_argument_ == '\0') return false;
@@ -235,8 +225,6 @@ bool VimEngine::handle_g_prefix(const Key& key) {
 
   switch (key.ascii()) {
     case 'g':
-      // `gg` is `G` with a default line of 1, where bare `G` defaults to the
-      // last line. Pinning the count here is what distinguishes them.
       if (count_ == 0) count_ = 1;
       execute_motion('G', "");
       return true;
@@ -266,7 +254,6 @@ bool VimEngine::handle_z_prefix(const Key& key) {
   return true;
 }
 
-// Keys that behave identically in normal and visual mode.
 bool VimEngine::handle_shared_navigation(const Key& key) {
   switch (key.type) {
     case Key::Type::Left: execute_motion('h', ""); return true;
@@ -322,7 +309,6 @@ void VimEngine::feed_normal(const Key& key) {
   const char command = key.ascii();
   if (command == '\0') return;
 
-  // A count. A leading zero is the "start of line" motion, not a digit.
   if ((command >= '1' && command <= '9') || (command == '0' && count_ > 0)) {
     count_ = count_ * 10 + (command - '0');
     return;
@@ -341,7 +327,6 @@ void VimEngine::feed_normal(const Key& key) {
     return;
   }
 
-  // Operators. A doubled operator key means "this line, linewise".
   if (const Operator candidate = operator_for(command); candidate != Operator::None) {
     if (operator_ != Operator::None) {
       if (command == operator_key_) {
@@ -375,7 +360,6 @@ void VimEngine::feed_normal(const Key& key) {
     return;
   }
 
-  // Anything below is a complete command, so a dangling operator is a mistype.
   if (operator_ != Operator::None) {
     reset_pending();
     return;
@@ -524,24 +508,16 @@ void VimEngine::feed_normal(const Key& key) {
   }
 }
 
-// -------------------------------------------------------------- motion + ops
 
 void VimEngine::execute_motion(char key, const std::string& argument) {
   int count = count_;
   if (operator_ != Operator::None && operator_count_ > 0) {
-    // vim multiplies the two counts: 2d3w deletes six words.
     count = (count > 0 ? count : 1) * operator_count_;
   }
-  // A count on G names a line rather than a repetition, so it must not be
-  // multiplied by the operator count.
   if (key == 'G') count = count_;
 
   const Cursor start = document_.cursor();
 
-  // vim's own quirk: on a non-blank, `cw` changes to the end of the current word
-  // rather than moving like `w` would. Note this is not simply `ce` — on a
-  // one-character word such as the "1" in "1 + 2", `ce` would run on to the end
-  // of the next word while `cw` must touch only that character.
   if (operator_ == Operator::Change && (key == 'w' || key == 'W')) {
     const char under = char_under_cursor();
     if (under != '\0' && under != ' ' && under != '\t') {
@@ -575,14 +551,11 @@ void VimEngine::execute_motion(char key, const std::string& argument) {
 void VimEngine::move_cursor(const MotionResult& motion, char key) {
   Cursor target = motion.target;
 
-  // j and k keep the column the user last aimed at, so moving through a short
-  // line and out the other side returns to the original column.
   if (key == 'j' || key == 'k') target.column = desired_column_;
 
   document_.set_cursor(document_.clamped(target, allows_cursor_past_end(mode_)));
 
   if (key == '$') {
-    // `$` sticks to the end of the line across subsequent j and k.
     desired_column_ = static_cast<std::size_t>(-1);
   } else if (key != 'j' && key != 'k') {
     desired_column_ = document_.cursor().column;
@@ -628,9 +601,6 @@ void VimEngine::apply_operator(const Range& range) {
       document_.begin_change();
       store_register(captured);
       if (range.linewise) {
-        // `cc` blanks the lines but keeps the indent and leaves one line to
-        // type on. Replacing then trimming avoids the "deleted the only line"
-        // edge case an erase-then-insert would hit.
         const std::size_t indent = first_non_blank(document_, range.first_row);
         std::string prefix = document_.line(range.first_row).substr(0, indent);
         const std::size_t prefix_size = prefix.size();
@@ -650,12 +620,8 @@ void VimEngine::apply_operator(const Range& range) {
   }
 }
 
-// ----------------------------------------------------------------- mode moves
 
 void VimEngine::enter_insert() {
-  // Clearing here rather than at each call site keeps a stray count (`3i`) from
-  // leaking into insert mode, where it would make has_pending() stick and stop
-  // `.` from ever recording the change.
   reset_pending();
   document_.begin_change();
   mode_ = Mode::Insert;
@@ -665,7 +631,6 @@ void VimEngine::enter_insert() {
 void VimEngine::leave_insert() {
   document_.commit_change();
   mode_ = Mode::Normal;
-  // vim steps the cursor back off the position past the last character.
   Cursor cursor = document_.cursor();
   if (cursor.column > 0) {
     cursor.column = utf8::prev_boundary(document_.line(cursor.row), cursor.column);
@@ -680,7 +645,6 @@ void VimEngine::enter_visual(Mode visual_mode) {
   visual_anchor_ = document_.cursor();
 }
 
-// --------------------------------------------------------------- insert mode
 
 void VimEngine::feed_insert(const Key& key) {
   switch (key.type) {
@@ -717,7 +681,6 @@ void VimEngine::feed_insert(const Key& key) {
       return;
     }
     case Key::Type::Tab:
-      // A scratchpad wants spaces, never a literal tab in an expression.
       document_.insert_text(document_.cursor(), "  ");
       document_.set_cursor(Cursor{document_.cursor().row, document_.cursor().column + 2});
       return;
@@ -737,7 +700,6 @@ void VimEngine::feed_insert(const Key& key) {
   }
 }
 
-// --------------------------------------------------------------- visual mode
 
 void VimEngine::feed_visual(const Key& key) {
   if (handle_pending_argument(key)) return;
@@ -780,7 +742,6 @@ void VimEngine::feed_visual(const Key& key) {
       clamp_cursor_for_mode();
       return;
     case 'o': {
-      // Swap which end of the selection the cursor controls.
       const Cursor cursor = document_.cursor();
       document_.set_cursor(visual_anchor_);
       visual_anchor_ = cursor;
@@ -840,7 +801,6 @@ void VimEngine::apply_visual_operator(Operator op) {
   } else {
     range.from = span->first;
     range.to = span->second;
-    // A visual selection includes the character under the cursor.
     range.to.column = utf8::next_boundary(document_.line(range.to.row), range.to.column);
   }
 
@@ -850,7 +810,6 @@ void VimEngine::apply_visual_operator(Operator op) {
   reset_pending();
 }
 
-// -------------------------------------------------------- command-line mode
 
 void VimEngine::feed_command_line(const Key& key) {
   switch (key.type) {
@@ -895,7 +854,6 @@ void VimEngine::run_ex(const std::string& command) {
   if (outcome.open_url.has_value() && url_opener_) url_opener_(*outcome.open_url);
   if (outcome.quit) quit_requested_ = true;
 
-  // A reload through :e replaces the buffer, so the cursor may be stale.
   clamp_cursor_for_mode();
   if (!outcome.message.empty() || outcome.is_error) {
     set_message(outcome.message, outcome.is_error);
@@ -904,7 +862,6 @@ void VimEngine::run_ex(const std::string& command) {
   }
 }
 
-// -------------------------------------------------------------------- search
 
 void VimEngine::run_search(const std::string& pattern, bool forward) {
   if (!pattern.empty()) {
@@ -923,7 +880,6 @@ bool VimEngine::search_next(bool forward) {
   const std::size_t rows = document_.line_count();
   const Cursor start = document_.cursor();
 
-  // Walk the buffer from just past the cursor, wrapping once.
   for (std::size_t step = 0; step <= rows; ++step) {
     const std::size_t row =
         forward ? (start.row + step) % rows : (start.row + rows - step % rows) % rows;
@@ -955,7 +911,6 @@ bool VimEngine::search_next(bool forward) {
   return false;
 }
 
-// ------------------------------------------------------------------ commands
 
 void VimEngine::put(bool after) {
   const Register value = active_register();
@@ -979,7 +934,6 @@ void VimEngine::put(bool after) {
       at.column = utf8::next_boundary(document_.line(at.row), at.column);
     }
     const Cursor end = document_.insert_text_multiline(at, repeat(value.text, count));
-    // vim leaves the cursor on the last character that was put.
     Cursor cursor = end;
     if (cursor.column > 0) {
       cursor.column = utf8::prev_boundary(document_.line(cursor.row), cursor.column);
@@ -996,7 +950,6 @@ void VimEngine::replace_char(const std::string& replacement) {
   const int count = effective_count();
   const std::string& text = document_.line(cursor.row);
 
-  // `3ra` needs three characters to overwrite, or it does nothing at all.
   std::size_t end = cursor.column;
   for (int step = 0; step < count; ++step) {
     if (end >= text.size()) return;
@@ -1009,7 +962,6 @@ void VimEngine::replace_char(const std::string& replacement) {
   document_.set_cursor(Cursor{
       cursor.row, cursor.column + replacement.size() * static_cast<std::size_t>(count)});
   document_.commit_change();
-  // The cursor rests on the last replaced character.
   Cursor rest = document_.cursor();
   if (rest.column > 0) {
     rest.column = utf8::prev_boundary(document_.line(rest.row), rest.column);
@@ -1034,7 +986,6 @@ void VimEngine::toggle_case_range(Cursor from, Cursor to) {
 }
 
 void VimEngine::join_lines_command() {
-  // `J` joins the next line; `3J` joins three lines into one.
   const int joins = std::max(effective_count() - 1, 1);
   const std::size_t row = document_.cursor().row;
 
@@ -1046,9 +997,7 @@ void VimEngine::join_lines_command() {
     next = first == std::string::npos ? std::string() : next.substr(first);
 
     std::string current = document_.line(row);
-    // The cursor lands where the two lines met.
     const std::size_t join_column = current.size();
-    // vim inserts a single space at the join unless the line already ends in one.
     if (!current.empty() && !next.empty() && current.back() != ' ') current += ' ';
     current += next;
 
@@ -1070,14 +1019,10 @@ void VimEngine::yank_result(bool with_expression) {
 
   Register value;
   if (!with_expression) {
-    // `gy` yanks the value even where it is not displayed, so the number behind
-    // `x = 5` is still reachable.
     value.text = eval.text;
   } else if (eval.show_result) {
     value.text = document_.line(row) + " = " + eval.text;
   } else {
-    // The line already reads as `name = value`; appending would give
-    // "subtotal = 128.40 = 128.4".
     value.text = document_.line(row);
   }
   registers_['"'] = value;
@@ -1096,9 +1041,7 @@ void VimEngine::repeat_last_change() {
   replaying_ = true;
   for (const Key& key : keys) feed(key);
   replaying_ = false;
-  // Set after the replay, not before: each nested feed() clears this flag, and
-  // `.` must never overwrite the change it just repeated.
   suppress_record_ = true;
 }
 
-}  // namespace calc
+}

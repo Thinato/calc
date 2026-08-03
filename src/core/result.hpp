@@ -18,7 +18,6 @@ enum class ErrorCode {
   DivisionByZero,
   DomainError,
   NotFinite,
-  // Names: variables and constants.
   InvalidName,
   UndefinedName,
   ConstantReassigned,
@@ -27,8 +26,6 @@ enum class ErrorCode {
   MultipleAssignment,
 };
 
-// An evaluation failure. `column` is a 0-based byte offset into the source line
-// so the status bar can point at the offending character.
 struct Error {
   ErrorCode code{};
   std::string message;
@@ -39,13 +36,11 @@ inline Error make_error(ErrorCode code, std::string message, std::size_t column)
   return Error{code, std::move(message), column};
 }
 
-// A value or an Error. Deliberately not std::expected: that is C++23, and this
-// only needs a handful of operations.
 template <typename T>
 class Result {
  public:
-  Result(T value) : data_(std::move(value)) {}      // NOLINT(*-explicit-*)
-  Result(Error error) : data_(std::move(error)) {}  // NOLINT(*-explicit-*)
+  Result(T value) : data_(std::move(value)) {}
+  Result(Error error) : data_(std::move(error)) {}
 
   bool ok() const { return std::holds_alternative<T>(data_); }
   explicit operator bool() const { return ok(); }
@@ -58,4 +53,4 @@ class Result {
   std::variant<T, Error> data_;
 };
 
-}  // namespace calc
+}

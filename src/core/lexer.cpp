@@ -12,8 +12,6 @@ bool is_space(char c) {
 
 bool is_digit(char c) { return c >= '0' && c <= '9'; }
 
-// Builds the diagnostic for a name that cannot exist, quoting the whole span the
-// user typed so the message names the thing they wrote.
 Error invalid_name(std::string_view span, std::size_t column, std::string_view reason) {
   return make_error(
       ErrorCode::InvalidName,
@@ -21,7 +19,7 @@ Error invalid_name(std::string_view span, std::size_t column, std::string_view r
       column);
 }
 
-}  // namespace
+}
 
 bool is_ident_start(char c) {
   return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_';
@@ -66,14 +64,11 @@ Result<std::vector<Token>> tokenize(std::string_view line) {
       ++i;
       continue;
     }
-    if (c == '#') break;  // comment to end of line
+    if (c == '#') break;
 
     Token token;
     token.column = i;
 
-    // A number: digits with an optional fraction and an optional exponent.
-    // Exponents are accepted so that a result this program printed (1e+30) can
-    // be pasted back in and re-read.
     if (is_digit(c) || (c == '.' && i + 1 < line.size() && is_digit(line[i + 1]))) {
       const std::size_t start = i;
       while (i < line.size() && is_digit(line[i])) ++i;
@@ -88,13 +83,10 @@ Result<std::vector<Token>> tokenize(std::string_view line) {
         if (i < line.size() && is_digit(line[i])) {
           while (i < line.size() && is_digit(line[i])) ++i;
         } else {
-          i = exponent_start;  // not an exponent after all, e.g. "2e" or "3end"
+          i = exponent_start;
         }
       }
 
-      // A digit run touching a letter or underscore is a name that starts with a
-      // digit, which no name may do. Reported over the whole span so "1_x" is
-      // named rather than dissolving into a number and a separate name.
       if (i < line.size() && is_ident_start(line[i])) {
         std::size_t end = i;
         while (end < line.size() && is_ident_continue(line[end])) ++end;
@@ -113,8 +105,6 @@ Result<std::vector<Token>> tokenize(std::string_view line) {
       while (i < line.size() && is_ident_continue(line[i])) ++i;
       const std::string_view span = line.substr(start, i - start);
 
-      // A '.' touching a name is part of the name the user meant, not an
-      // operator: "x.y" is one bad name rather than two good ones.
       if (i < line.size() && line[i] == '.') {
         std::size_t end = i + 1;
         while (end < line.size() && is_ident_continue(line[end])) ++end;
@@ -155,4 +145,4 @@ Result<std::vector<Token>> tokenize(std::string_view line) {
   return tokens;
 }
 
-}  // namespace calc
+}

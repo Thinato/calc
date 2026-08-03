@@ -9,9 +9,6 @@
 namespace {
 
 #ifndef CALC_VERSION_STRING
-// The build always defines this — from the tag being released, or from the
-// version in CMakeLists.txt. Saying "unknown" beats a hardcoded number that
-// quietly disagrees with the release it shipped in.
 #define CALC_VERSION_STRING "unknown"
 #endif
 
@@ -36,7 +33,7 @@ constexpr const char* kUsage =
     "options     -h, --help       this text\n"
     "            -v, --version    version\n";
 
-}  // namespace
+}
 
 int main(int argc, char** argv) {
   std::string path;
@@ -69,7 +66,6 @@ int main(int argc, char** argv) {
       std::fprintf(stderr, "calc: %s\n", read.error.c_str());
       return 1;
     }
-    // A file that does not exist yet opens as an empty buffer, as vim does.
     document = calc::Document::from_text(read.contents);
     document.set_path(path);
   }

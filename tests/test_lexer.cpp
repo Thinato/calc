@@ -17,7 +17,7 @@ TEST_CASE("tokenize splits operators and numbers") {
   const auto tokens = tokenize("1 + 2.5 * (3 - 4) / 5 ^ 6");
   REQUIRE(tokens.ok());
   const auto& list = tokens.value();
-  REQUIRE(list.size() == 14);  // 13 tokens plus End
+  REQUIRE(list.size() == 14);
   CHECK(list[0].kind == TokenKind::Number);
   CHECK(list[0].number == doctest::Approx(1.0));
   CHECK(list[1].kind == TokenKind::Plus);
@@ -58,9 +58,6 @@ TEST_CASE("tokenize accepts leading-dot and exponent numbers") {
     CHECK(tokens.value()[0].number == doctest::Approx(1.26765060023e+30));
   }
   SUBCASE("a digit touching a letter is a malformed name, not two tokens") {
-    // "2e" is not a number followed by the name e. With E a built-in constant,
-    // this is the implicit multiplication a user might reach for, and it has to
-    // fail clearly rather than parse into something surprising.
     const auto tokens = tokenize("2e");
     REQUIRE_FALSE(tokens.ok());
     CHECK(tokens.error().code == ErrorCode::InvalidName);

@@ -20,7 +20,7 @@ std::size_t error_column_for(std::string_view line) {
   return tree.error().column;
 }
 
-}  // namespace
+}
 
 TEST_CASE("parser accepts every operator in the language") {
   for (std::string_view line :
@@ -41,7 +41,6 @@ TEST_CASE("parser reports unbalanced parentheses at the opening paren") {
   CHECK(error_code_for("(1 + 2") == ErrorCode::UnbalancedParen);
   CHECK(error_column_for("2 * (1 + 3") == 4);
 
-  // A stray closer is trailing junk, not an unbalanced open.
   CHECK(error_code_for("1 + 2)") == ErrorCode::UnexpectedToken);
 }
 

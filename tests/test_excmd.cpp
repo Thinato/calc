@@ -16,7 +16,6 @@ using namespace calc;
 
 namespace {
 
-// A scratch path that cleans itself up, so the suite leaves no files behind.
 class TempFile {
  public:
   explicit TempFile(const std::string& name)
@@ -53,7 +52,7 @@ class TempFile {
   std::string path_;
 };
 
-}  // namespace
+}
 
 TEST_CASE(":q refuses to discard unsaved work unless forced") {
   Document document = Document::from_text("1 + 2\n");
@@ -77,8 +76,6 @@ TEST_CASE(":q refuses to discard unsaved work unless forced") {
 }
 
 TEST_CASE(":w writes only the expressions, never the results") {
-  // The whole point of keeping results outside the document: a saved file holds
-  // exactly what was typed and reopens unchanged.
   const TempFile file("calc_test_write.calc");
   Document document = Document::from_text("1 + 2\nsqrt(16) + pow(2, 10)\n");
 
@@ -87,10 +84,8 @@ TEST_CASE(":w writes only the expressions, never the results") {
 
   const std::string saved = file.read();
   CHECK(saved == "1 + 2\nsqrt(16) + pow(2, 10)\n");
-  // No separator, and no trace of either computed value (3 and 1028).
   CHECK(saved.find('=') == std::string::npos);
   CHECK(saved.find("1028") == std::string::npos);
-  // The digits the user typed are of course still there.
   CHECK(saved.find("16") != std::string::npos);
 
   CHECK_FALSE(document.modified());
@@ -200,7 +195,6 @@ TEST_CASE(":github asks for the project page to be opened") {
   CHECK_FALSE(outcome.is_error);
   REQUIRE(outcome.open_url.has_value());
   CHECK(*outcome.open_url == "https://github.com/Thinato/calc");
-  // The message names the destination, and nothing else happens to the buffer.
   CHECK(outcome.message == "opening https://github.com/Thinato/calc");
   CHECK_FALSE(outcome.quit);
   CHECK_FALSE(outcome.goto_row.has_value());
@@ -208,8 +202,6 @@ TEST_CASE(":github asks for the project page to be opened") {
 }
 
 TEST_CASE(":github does not open anything on its own") {
-  // The point of returning the URL rather than launching it here: this test runs
-  // in CI without a browser appearing.
   Document document;
   CHECK_FALSE(execute_ex_command("w", document).open_url.has_value());
   CHECK_FALSE(execute_ex_command("q", document).open_url.has_value());
@@ -223,8 +215,6 @@ TEST_CASE("a command is not a prefix of :github") {
 }
 
 TEST_CASE("the engine hands the URL to the opener it was given") {
-  // The wiring is the part that can silently rot: a command that names a URL
-  // nobody acts on looks exactly like a working one.
   Document document = Document::from_text("1 + 2");
   ResultCache results;
   VimEngine engine(document, results);
@@ -238,11 +228,10 @@ TEST_CASE("the engine hands the URL to the opener it was given") {
   CHECK(opened[0] == "https://github.com/Thinato/calc");
   CHECK(engine.message() == "opening https://github.com/Thinato/calc");
   CHECK_FALSE(engine.message_is_error());
-  CHECK(engine.mode() == Mode::Normal);  // and the command line is done with
+  CHECK(engine.mode() == Mode::Normal);
 }
 
 TEST_CASE("an engine with no opener wired up still survives :github") {
-  // The default in tests, and on a platform with no opener to offer.
   Document document = Document::from_text("1 + 2");
   ResultCache results;
   VimEngine engine(document, results);

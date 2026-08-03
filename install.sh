@@ -1,12 +1,3 @@
-#!/bin/sh
-# Fetches the latest calc release and drops the binary somewhere on disk.
-#
-#   curl --proto '=https' --tlsv1.2 -sSf \
-#     https://raw.githubusercontent.com/Thinato/calc/main/install.sh | sh
-#
-# Knobs (env vars):
-#   CALC_INSTALL_DIR   where the binary lands. Defaults to $HOME/.local/bin.
-#   CALC_VERSION       release tag to grab (default: latest, e.g. v0.2.0).
 
 set -eu
 
@@ -15,8 +6,6 @@ BIN="calc"
 DEST_DIR="${CALC_INSTALL_DIR:-$HOME/.local/bin}"
 TAG="${CALC_VERSION:-latest}"
 
-# What to suggest whenever there is no download that fits. Nothing needs to be
-# installed for this: CMake fetches FTXUI and doctest itself.
 SOURCE_HINT="git clone https://github.com/$REPO && cd calc && cmake --preset default && cmake --build build"
 
 die() {
@@ -45,7 +34,6 @@ else
 fi
 
 fetch() {
-    # $1 url, $2 output path
     if [ "$FETCH" = curl ]; then
         curl --proto '=https' --tlsv1.2 -fsSL "$1" -o "$2"
     else
@@ -82,11 +70,8 @@ resolve_tag() {
     fi
     api="https://api.github.com/repos/$REPO/releases/latest"
     tmp="$(mktemp)"
-    # Without the `|| die`, `set -e` would end the run right here with no output
-    # at all, since this whole function runs inside a command substitution.
     fetch "$api" "$tmp" ||
         die "could not read $api — is there a published release yet?"
-    # Pull the first tag_name field out of the JSON without depending on jq.
     out="$(sed -n 's/.*"tag_name"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$tmp" | head -n1)"
     rm -f "$tmp"
     [ -n "$out" ] || die "could not read tag_name from $api"
@@ -117,8 +102,6 @@ main() {
     chmod +x "$DEST_DIR/$BIN"
 
     say ""
-    # Running it is the only real proof it fits this machine: the Linux builds
-    # need glibc 2.35 or newer, and saying so now beats a puzzling failure later.
     if version="$("$DEST_DIR/$BIN" --version 2>/dev/null)"; then
         say "installed: $DEST_DIR/$BIN ($version)"
     else

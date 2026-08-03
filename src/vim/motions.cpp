@@ -12,12 +12,10 @@ namespace {
 
 enum class CharClass { Blank, Keyword, Punctuation };
 
-// vim's three character classes. Word motions stop wherever the class changes,
-// which is why "1+2" is three words to `w` but one to `W`.
 CharClass classify(char byte) {
   if (byte == ' ' || byte == '\t' || byte == '\n') return CharClass::Blank;
   const auto value = static_cast<unsigned char>(byte);
-  if (value >= 0x80) return CharClass::Keyword;  // any non-ASCII counts as a word
+  if (value >= 0x80) return CharClass::Keyword;
   if ((value >= 'a' && value <= 'z') || (value >= 'A' && value <= 'Z') ||
       (value >= '0' && value <= '9') || byte == '_') {
     return CharClass::Keyword;
@@ -25,7 +23,6 @@ CharClass classify(char byte) {
   return CharClass::Punctuation;
 }
 
-// W, B and E collapse the distinction between words and punctuation.
 CharClass classify_big(char byte) {
   return classify(byte) == CharClass::Blank ? CharClass::Blank : CharClass::Keyword;
 }
@@ -34,8 +31,6 @@ CharClass class_of(char byte, bool big) {
   return big ? classify_big(byte) : classify(byte);
 }
 
-// The character under a position. The end of a line reads as a newline, which
-// lets the word walkers treat line breaks as ordinary blanks.
 char char_at(const Document& document, Cursor position) {
   if (position.column >= document.line_length(position.row)) return '\n';
   return document.line(position.row)[position.column];
@@ -82,7 +77,7 @@ Cursor word_forward(const Document& document, Cursor position, bool big) {
     }
   }
   while (class_of(char_at(document, position), big) == CharClass::Blank) {
-    if (at_empty_line(document, position)) break;  // an empty line is a word
+    if (at_empty_line(document, position)) break;
     if (!advance(document, position)) return position;
   }
   return position;
@@ -160,8 +155,6 @@ char opening_for(char closing) {
   }
 }
 
-// `%` jumps between a bracket and its partner, scanning the whole buffer so a
-// parenthesis split across lines still matches.
 std::optional<Cursor> matching_bracket(const Document& document, Cursor from) {
   const std::string& line = document.line(from.row);
   std::size_t column = from.column;
@@ -219,7 +212,7 @@ std::size_t paragraph_backward(const Document& document, std::size_t row, int co
   return row;
 }
 
-}  // namespace
+}
 
 std::size_t first_non_blank(const Document& document, std::size_t row) {
   const std::string& text = document.line(row);
@@ -231,7 +224,6 @@ Cursor end_of_current_word(const Document& document, Cursor from, int count, boo
   Cursor position = from;
   for (int step = 0; step < std::max(count, 1); ++step) {
     if (step > 0) {
-      // Beyond the first word, `cw` behaves like `e`.
       position = word_end(document, position, big);
       continue;
     }
@@ -282,8 +274,6 @@ MotionResult apply_motion(const Document& document, Cursor from, char key, int c
                           const std::string& argument, bool for_operator) {
   MotionResult result;
   result.target = from;
-  // `count` arrives as 0 when the user typed no count. Most motions just repeat,
-  // but G and gg need to tell "go to the last line" from "go to line 1".
   const int repeat = std::max(count, 1);
 
   switch (key) {
@@ -338,8 +328,6 @@ MotionResult apply_motion(const Document& document, Cursor from, char key, int c
           std::min(from.row + static_cast<std::size_t>(repeat) - 1, document.last_row());
       const std::size_t length = document.line_length(row);
       result.target.row = row;
-      // Target the last character; an inclusive range then reaches the line
-      // end, which is what `d$` must delete.
       result.target.column = utf8::prev_boundary(document.line(row), length);
       result.kind = MotionKind::CharwiseInclusive;
       result.valid = true;
@@ -361,8 +349,6 @@ MotionResult apply_motion(const Document& document, Cursor from, char key, int c
       for (int step = 0; step < repeat; ++step) {
         position = word_forward(document, position, key == 'W');
       }
-      // `dw` on the last word of a line stops at the line end rather than
-      // pulling the following line up.
       if (for_operator && position.row != from.row) {
         position = Cursor{from.row, document.line_length(from.row)};
       }
@@ -392,8 +378,6 @@ MotionResult apply_motion(const Document& document, Cursor from, char key, int c
       break;
     }
     case 'G': {
-      // With a count, go to that line; without, to the last line. `gg` reaches
-      // here as 'G' with an explicit count of 1.
       result.target.row =
           count > 0 ? std::min(static_cast<std::size_t>(count) - 1, document.last_row())
                     : document.last_row();
@@ -447,4 +431,4 @@ MotionResult apply_motion(const Document& document, Cursor from, char key, int c
   return result;
 }
 
-}  // namespace calc
+}

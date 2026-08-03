@@ -18,11 +18,9 @@ bool operator<(const Cursor& lhs, const Cursor& rhs) {
 
 namespace {
 
-// Undo history depth. A scratchpad never needs more, and the bound keeps whole
-// document snapshots cheap.
 constexpr std::size_t kMaxUndoDepth = 500;
 
-}  // namespace
+}
 
 Document::Document() = default;
 
@@ -41,8 +39,6 @@ Document Document::from_text(std::string_view text) {
     start = newline + 1;
   }
 
-  // A trailing newline terminates the last line rather than starting an empty
-  // one, so a round trip through to_text() is stable.
   if (document.lines_.size() > 1 && document.lines_.back().empty()) {
     document.lines_.pop_back();
   }
@@ -74,7 +70,6 @@ Cursor Document::clamped(Cursor cursor, bool allow_past_end) const {
                                 ? length
                                 : utf8::prev_boundary(line(cursor.row), length);
   cursor.column = std::min(cursor.column, limit);
-  // Never leave a column in the middle of a multi-byte character.
   const std::string& text = line(cursor.row);
   while (cursor.column > 0 && cursor.column < text.size() &&
          utf8::is_continuation(text[cursor.column])) {
@@ -84,8 +79,6 @@ Cursor Document::clamped(Cursor cursor, bool allow_past_end) const {
 }
 
 void Document::set_cursor(Cursor cursor) {
-  // Clamps permissively: normal mode narrows this further, but no caller can
-  // ever place the cursor beyond the end of the typed text.
   cursor_ = clamped(cursor, true);
 }
 
@@ -141,8 +134,6 @@ Cursor Document::insert_text_multiline(Cursor at, std::string_view text) {
     return Cursor{at.row, at.column + text.size()};
   }
 
-  // Hold the text that follows the insertion point aside, append each segment
-  // as its own line, then reattach the tail.
   std::string tail = lines_[at.row].substr(at.column);
   lines_[at.row].erase(at.column);
   lines_[at.row].append(text.substr(0, first_newline));
@@ -195,7 +186,6 @@ std::string Document::erase_lines(std::size_t first, std::size_t count) {
 
   lines_.erase(lines_.begin() + static_cast<std::ptrdiff_t>(first),
                lines_.begin() + static_cast<std::ptrdiff_t>(first + count));
-  // The buffer always holds at least one line.
   if (lines_.empty()) lines_.emplace_back();
   return removed;
 }
@@ -270,4 +260,4 @@ bool Document::redo() {
   return true;
 }
 
-}  // namespace calc
+}

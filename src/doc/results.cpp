@@ -8,7 +8,7 @@ const LineEval& empty_eval() {
   return kEmpty;
 }
 
-}  // namespace
+}
 
 void ResultCache::refresh(const Document& document) {
   if (primed_ && revision_ == document.revision()) return;
@@ -27,4 +27,4 @@ const LineEval& ResultCache::at(std::size_t row) const {
   return entries_[row];
 }
 
-}  // namespace calc
+}
