@@ -20,9 +20,14 @@ namespace {
 
 constexpr std::size_t kMaxUndoDepth = 500;
 
+std::size_t next_revision() {
+  static std::size_t counter = 0;
+  return ++counter;
 }
 
-Document::Document() = default;
+}
+
+Document::Document() : revision_(next_revision()) {}
 
 Document Document::from_text(std::string_view text) {
   Document document;
@@ -113,7 +118,7 @@ std::string Document::lines_text(std::size_t first, std::size_t count) const {
 void Document::touch() {
   begin_change();
   modified_ = true;
-  ++revision_;
+  revision_ = next_revision();
 }
 
 void Document::insert_text(Cursor at, std::string_view text) {
@@ -241,7 +246,7 @@ bool Document::undo() {
   lines_ = std::move(previous.lines);
   cursor_ = clamped(previous.cursor, true);
   modified_ = true;
-  ++revision_;
+  revision_ = next_revision();
   return true;
 }
 
@@ -254,7 +259,7 @@ bool Document::redo() {
   lines_ = std::move(next.lines);
   cursor_ = clamped(next.cursor, true);
   modified_ = true;
-  ++revision_;
+  revision_ = next_revision();
   return true;
 }
 

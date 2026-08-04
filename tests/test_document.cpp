@@ -140,6 +140,28 @@ TEST_CASE("the revision counter moves on every mutation") {
   CHECK(document.revision() != before);
 }
 
+TEST_CASE("a revision is never handed out twice, so two buffers cannot collide") {
+  const Document first = Document::from_text("1\n");
+  const Document second = Document::from_text("2\n");
+  CHECK(first.revision() != second.revision());
+
+  Document third = Document::from_text("3\n");
+  const std::size_t before = third.revision();
+  third = Document::from_text("4\n");
+  CHECK(third.revision() != before);
+}
+
+TEST_CASE("a cache primed on one buffer does not answer for its replacement") {
+  Document document = Document::from_text("aaa = 111\n");
+  ResultCache results;
+  results.refresh(document);
+  REQUIRE(results.at(0).text == "111");
+
+  document = Document::from_text("7 + 7\n");
+  results.refresh(document);
+  CHECK(results.at(0).text == "14");
+}
+
 TEST_CASE("the result cache follows the text it was built from") {
   Document document = Document::from_text("1 + 2\nhello\n\n");
   ResultCache results;
