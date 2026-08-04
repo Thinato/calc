@@ -69,8 +69,7 @@ TEST_CASE("a sampled pole leaves a gap rather than a value") {
   CHECK(gaps(data) == 1);
   CHECK_FALSE(data.samples.front().ok);
   CHECK(data.samples.back().y == doctest::Approx(1));
-  REQUIRE(data.first_error.has_value());
-  CHECK(data.first_error->code == ErrorCode::DivisionByZero);
+  CHECK_FALSE(data.first_error.has_value());
 }
 
 TEST_CASE("a domain that steps over a pole reports the values it did see") {

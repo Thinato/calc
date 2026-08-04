@@ -136,7 +136,7 @@ TEST_CASE("a name the body cannot resolve is reported at the call") {
 
 TEST_CASE("only the innermost function is named, and the column is this row's") {
   const Script script(
-      "define inner(x): x / 0\n"
+      "define inner(x): (x - x) / 0\n"
       "define outer(x): inner(x)\n"
       "1 + outer(2)\n");
 

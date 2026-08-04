@@ -29,8 +29,10 @@ std::vector<std::string> render_lines(std::string_view initial, std::string_view
   VimEngine engine(document, results);
   for (const Key& key : test::parse_keys(script)) {
     engine.feed(key);
+    results.set_infinity_mode(engine.infinity_mode());
     results.refresh(document);
   }
+  results.set_infinity_mode(engine.infinity_mode());
   results.refresh(document);
 
   Viewport viewport;
@@ -224,26 +226,26 @@ TEST_CASE("reassigning a constant reports where it came from") {
 }
 
 TEST_CASE("an error is drawn after the line that caused it") {
-  const auto lines = render_lines("10 + 1 / 0\nx = 1", "j", 60);
-  CHECK(contains(lines, "10 + 1 / 0  Error: division by zero"));
+  const auto lines = render_lines("10 + 0 / 0\nx = 1", "j", 60);
+  CHECK(contains(lines, "10 + 0 / 0  Error: division by zero"));
   CHECK_FALSE(contains(lines, "col 8"));
 }
 
 TEST_CASE("an error is hidden while the cursor is on its line") {
-  const auto lines = render_lines("10 + 1 / 0\nx = 1", "", 60);
+  const auto lines = render_lines("10 + 0 / 0\nx = 1", "", 60);
   CHECK_FALSE(contains(lines, "Error:"));
   CHECK_FALSE(contains(lines, "division by zero"));
 }
 
 TEST_CASE("moving back onto an erroring line hides it again") {
-  CHECK(contains(render_lines("10 + 1 / 0\nx = 1", "j", 60), "Error:"));
-  CHECK_FALSE(contains(render_lines("10 + 1 / 0\nx = 1", "jk", 60), "Error:"));
+  CHECK(contains(render_lines("10 + 0 / 0\nx = 1", "j", 60), "Error:"));
+  CHECK_FALSE(contains(render_lines("10 + 0 / 0\nx = 1", "jk", 60), "Error:"));
 }
 
 TEST_CASE("a line never shows both a result and an error") {
-  const auto lines = render_lines("1 / 0\n1 + 2", "j", 60);
-  CHECK(contains(lines, "1 / 0  Error: division by zero"));
-  CHECK_FALSE(contains(lines, "1 / 0 ="));
+  const auto lines = render_lines("0 / 0\n1 + 2", "j", 60);
+  CHECK(contains(lines, "0 / 0  Error: division by zero"));
+  CHECK_FALSE(contains(lines, "0 / 0 ="));
   CHECK(contains(lines, "1 + 2 = 3"));
   CHECK_FALSE(contains(lines, "1 + 2  Error"));
 }

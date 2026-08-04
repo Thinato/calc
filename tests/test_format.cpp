@@ -27,8 +27,11 @@ TEST_CASE("format_value prints numbers the way a calculator should") {
   CHECK(format_value(std::pow(2.0, 100)) == "1.26765060023e+30");
 }
 
-TEST_CASE("format_value refuses to print non-finite values") {
-  CHECK(format_value(std::numeric_limits<double>::infinity()).empty());
-  CHECK(format_value(-std::numeric_limits<double>::infinity()).empty());
+TEST_CASE("format_value writes infinity the way you would type it") {
+  CHECK(format_value(std::numeric_limits<double>::infinity()) == "inf");
+  CHECK(format_value(-std::numeric_limits<double>::infinity()) == "-inf");
+}
+
+TEST_CASE("format_value refuses to print a value that is not a number") {
   CHECK(format_value(std::numeric_limits<double>::quiet_NaN()).empty());
 }

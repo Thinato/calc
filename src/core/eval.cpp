@@ -12,12 +12,18 @@ namespace {
 
 constexpr std::size_t kMaxCallDepth = 64;
 
-Result<Value> checked(Value value, std::size_t column) {
+Error undefined(std::size_t column) {
+  return make_error(ErrorCode::DomainError, "result is undefined", column);
+}
+
+Result<Value> checked(Value value, std::size_t column, InfinityMode mode,
+                      bool explained) {
+  if (std::isnan(value)) return undefined(column);
   if (std::isinf(value)) {
-    return make_error(ErrorCode::NotFinite, "result is too large", column);
-  }
-  if (std::isnan(value)) {
-    return make_error(ErrorCode::DomainError, "result is undefined", column);
+    if (!explained) {
+      return make_error(ErrorCode::NotFinite, "result is too large", column);
+    }
+    return infinity_for(mode, value);
   }
   return value;
 }
@@ -30,22 +36,34 @@ Result<Value> evaluate_binary(const Binary& node, const Environment& environment
 
   const Value a = lhs.value();
   const Value b = rhs.value();
+  const InfinityMode mode = environment.infinity_mode();
+  const bool explained = std::isinf(a) || std::isinf(b);
+  const bool unbounded_sum =
+      mode == InfinityMode::Projective && std::isinf(a) && std::isinf(b);
 
   switch (node.op) {
-    case '+': return checked(a + b, node.column);
-    case '-': return checked(a - b, node.column);
-    case '*': return checked(a * b, node.column);
+    case '+':
+      if (unbounded_sum) return undefined(node.column);
+      return checked(a + b, node.column, mode, explained);
+    case '-':
+      if (unbounded_sum) return undefined(node.column);
+      return checked(a - b, node.column, mode, explained);
+    case '*': return checked(a * b, node.column, mode, explained);
     case '/':
       if (b == 0) {
-        return make_error(ErrorCode::DivisionByZero, "division by zero", node.column);
+        if (a == 0) {
+          return make_error(ErrorCode::DivisionByZero, "division by zero", node.column);
+        }
+        return infinity_for(mode, a);
       }
-      return checked(a / b, node.column);
+      return checked(a / b, node.column, mode, explained);
     case '^': {
+      if (a == 0 && b < 0) return infinity_for(mode, a);
       const Value result = std::pow(a, b);
       if (std::isnan(result) && !std::isnan(a) && !std::isnan(b)) {
         return make_error(ErrorCode::DomainError, "'^' is undefined here", node.column);
       }
-      return checked(result, node.column);
+      return checked(result, node.column, mode, explained);
     }
     default: break;
   }
@@ -124,11 +142,12 @@ Result<Value> evaluate_call(const Call& node, const Environment& environment) {
     args.push_back(value.value());
   }
 
-  Result<Value> result = user != nullptr
-                             ? evaluate_user_call(*user, node, args, environment)
-                             : builtin->apply(args, node.column);
+  Result<Value> result =
+      user != nullptr ? evaluate_user_call(*user, node, args, environment)
+                      : builtin->apply(args, node.column, environment.infinity_mode());
   if (!result) return result.error();
-  return checked(result.value(), node.column);
+  if (std::isnan(result.value())) return undefined(node.column);
+  return normalized(result.value(), environment.infinity_mode());
 }
 
 }
@@ -148,7 +167,8 @@ Result<Value> evaluate(const Node& node, const Environment& environment) {
   if (const auto* unary = std::get_if<Unary>(&node.kind)) {
     Result<Value> operand = evaluate(*unary->operand, environment);
     if (!operand) return operand.error();
-    return unary->op == '-' ? -operand.value() : operand.value();
+    const Value value = unary->op == '-' ? -operand.value() : operand.value();
+    return normalized(value, environment.infinity_mode());
   }
   if (const auto* binary = std::get_if<Binary>(&node.kind)) {
     return evaluate_binary(*binary, environment);

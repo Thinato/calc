@@ -38,12 +38,17 @@ class Environment {
   Environment child_for_call() const;
   std::size_t depth() const { return depth_; }
 
+  InfinityMode infinity_mode() const { return mode_; }
+  void set_infinity_mode(InfinityMode mode) { mode_ = mode; }
+
   static bool is_constant_name(std::string_view name);
+  static bool is_infinity_name(std::string_view name);
 
  private:
   std::map<std::string, Binding, std::less<>> bindings_;
   std::map<std::string, std::shared_ptr<const UserFunction>, std::less<>> functions_;
   std::size_t depth_ = 0;
+  InfinityMode mode_ = InfinityMode::Signed;
 };
 
 }

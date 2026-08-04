@@ -14,6 +14,12 @@ const LineEval& empty_eval() {
 
 }
 
+void ResultCache::set_infinity_mode(InfinityMode mode) {
+  if (environment_.infinity_mode() == mode) return;
+  environment_.set_infinity_mode(mode);
+  primed_ = false;
+}
+
 void ResultCache::refresh(const Document& document) {
   if (primed_ && revision_ == document.revision()) return;
   revision_ = document.revision();

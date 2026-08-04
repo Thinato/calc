@@ -18,6 +18,8 @@ class ResultCache {
  public:
   void refresh(const Document& document);
 
+  void set_infinity_mode(InfinityMode mode);
+
   const LineEval& at(std::size_t row) const;
   std::size_t size() const { return entries_.size(); }
 

@@ -72,10 +72,25 @@ with_tax(subtotal)
 define bell(x): E ^ -(x ^ 2)
 define ripple(x): x - x ^ 3 / 3
 
+# Infinity is a value you can hold, in two spellings. Dividing by zero reaches
+# it, but a finite sum that overflows is still reported: infinity is something
+# you ask for, not something you fall into.
+inf
+1 / 0
+-1 / 0
+1 / inf
+2 ^ inf
+2 ^ 100000
+
+# Try :set infinity=projective, where the two ends of the line are one point.
+# Then -1 / 0 is plain inf, and inf + inf no longer has an answer.
+inf + inf
+
 # These lines show why they failed, beside them. Move onto one and its
 # reason hides, so editing it is not a running commentary.
 1 +
-1 / 0
+0 / 0
+inf - inf
 sqrt(-1)
 undefined_name * 2
 x1 = 5

@@ -16,6 +16,8 @@ constexpr std::array kBuiltins = {
     BuiltinConstant{"PI", 3.14159265358979323846},
     BuiltinConstant{"E", 2.71828182845904523536},
     BuiltinConstant{"TAU", 6.28318530717958647692},
+    BuiltinConstant{"inf", kInfinity},
+    BuiltinConstant{"infinity", kInfinity},
 };
 
 }
@@ -54,6 +56,10 @@ Environment Environment::child_for_call() const {
 bool Environment::is_constant_name(std::string_view name) {
   return std::none_of(name.begin(), name.end(),
                       [](char byte) { return byte >= 'a' && byte <= 'z'; });
+}
+
+bool Environment::is_infinity_name(std::string_view name) {
+  return name == "inf" || name == "infinity";
 }
 
 std::optional<Error> Environment::define(const std::string& name, Value value,

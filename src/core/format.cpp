@@ -6,6 +6,7 @@
 namespace calc {
 
 std::string format_value(Value value) {
+  if (std::isinf(value)) return value < 0 ? "-inf" : "inf";
   if (!std::isfinite(value)) return {};
   if (value == 0) return "0";
 

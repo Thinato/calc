@@ -93,7 +93,7 @@ ExOutcome do_edit(Document& document, const Parsed& parsed) {
   return outcome;
 }
 
-const Environment& plot_environment(const ResultCache* results) {
+const Environment& environment_of(const ResultCache* results) {
   static const Environment kEmpty;
   return results != nullptr ? results->environment() : kEmpty;
 }
@@ -147,7 +147,7 @@ std::optional<std::string> function_named_on(const std::string& line,
 
 ExOutcome do_plot(const Document& document, const Parsed& parsed,
                   const ResultCache* results) {
-  const Environment& environment = plot_environment(results);
+  const Environment& environment = environment_of(results);
   const std::vector<std::string_view> words = words_of(parsed.argument);
 
   PlotSpec spec;
@@ -200,7 +200,13 @@ ExOutcome do_plot(const Document& document, const Parsed& parsed,
   return outcome;
 }
 
-ExOutcome do_set(const Parsed& parsed) {
+std::string_view name_of(InfinityMode mode) {
+  return mode == InfinityMode::Projective ? "projective" : "signed";
+}
+
+ExOutcome do_set(const Parsed& parsed, const ResultCache* results) {
+  constexpr std::string_view kInfinity = "infinity";
+
   ExOutcome outcome;
   const std::string& option = parsed.argument;
   if (option == "number" || option == "nu") {
@@ -210,6 +216,23 @@ ExOutcome do_set(const Parsed& parsed) {
   if (option == "nonumber" || option == "nonu") {
     outcome.line_numbers = false;
     return outcome;
+  }
+  if (option == kInfinity || option == std::string(kInfinity) + "?") {
+    outcome.message = std::string(kInfinity) + "=" +
+                      std::string(name_of(environment_of(results).infinity_mode()));
+    return outcome;
+  }
+  if (option.compare(0, kInfinity.size() + 1, std::string(kInfinity) + "=") == 0) {
+    const std::string_view value = std::string_view(option).substr(kInfinity.size() + 1);
+    if (value == "signed") {
+      outcome.infinity_mode = InfinityMode::Signed;
+      return outcome;
+    }
+    if (value == "projective") {
+      outcome.infinity_mode = InfinityMode::Projective;
+      return outcome;
+    }
+    return failure("unknown mode: " + std::string(value) + " (try signed or projective)");
   }
   return failure("unknown option: " + option);
 }
@@ -247,7 +270,7 @@ ExOutcome execute_ex_command(std::string_view command, Document& document,
     return do_edit(document, parsed);
   }
   if (parsed.name == "set" || parsed.name == "se") {
-    return do_set(parsed);
+    return do_set(parsed, results);
   }
   if (parsed.name == "plot") {
     return do_plot(document, parsed, results);

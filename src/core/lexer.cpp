@@ -1,6 +1,7 @@
 #include "core/lexer.hpp"
 
 #include <cctype>
+#include <cmath>
 #include <cstdlib>
 
 namespace calc {
@@ -102,6 +103,9 @@ Result<std::vector<Token>> tokenize(std::string_view line) {
       const std::string digits(line.substr(start, i - start));
       token.kind = TokenKind::Number;
       token.number = std::strtod(digits.c_str(), nullptr);
+      if (!std::isfinite(token.number)) {
+        return make_error(ErrorCode::NotFinite, "number is too large", start);
+      }
       tokens.push_back(std::move(token));
       continue;
     }

@@ -839,6 +839,7 @@ void VimEngine::run_ex(const std::string& command) {
   if (outcome.line_numbers.has_value()) line_numbers_ = *outcome.line_numbers;
   if (outcome.close_plot) plot_.reset();
   if (outcome.plot.has_value()) plot_ = *outcome.plot;
+  if (outcome.infinity_mode.has_value()) infinity_mode_ = *outcome.infinity_mode;
   if (outcome.goto_row.has_value()) {
     const std::size_t row = std::min(*outcome.goto_row, document_.last_row());
     document_.set_cursor(Cursor{row, first_non_blank(document_, row)});

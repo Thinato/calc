@@ -56,6 +56,7 @@ ftxui::Component make_view(SessionRef session, ftxui::ScreenInteractive& screen,
 
     apply_scroll(active.viewport, active.engine.take_scroll_request(), active.document);
     follow_cursor(active.viewport, active.document);
+    active.results.set_infinity_mode(active.engine.infinity_mode());
     active.results.refresh(active.document);
     return render_frame(active.document, active.results, active.engine, active.viewport);
   });
