@@ -31,6 +31,8 @@ enum class ErrorCode {
   ReturnOutsideBody,
   TooMuchRecursion,
   FunctionRedefined,
+  SumClosure,
+  SumRange,
 };
 
 struct Error {

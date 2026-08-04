@@ -41,7 +41,7 @@ automatically, so a fresh clone needs nothing installed.
 ```sh
 cmake --preset default
 cmake --build build
-ctest --test-dir build          # 273 tests, no terminal required
+ctest --test-dir build          # 293 tests, no terminal required
 ./build/calc                    # scratch buffer
 ./build/calc notes.calc         # open a file
 ```
@@ -109,6 +109,7 @@ that entry point is only ever compiled by Emscripten.
 | `name = expr` | define a variable or constant |
 | `define f(x): expr` | define a function |
 | `define f(x) { … }` | the same, with a body of several statements |
+| `sum(a, b, f)` | add `f` over the whole numbers `a` to `b` |
 | `inf` `infinity` | infinity, in two spellings |
 | `#` | comment to the end of the line |
 
@@ -189,8 +190,8 @@ else:
 x1 = 5  Error: invalid name 'x1': names cannot contain digits
 ```
 
-`define` and `return` are reserved words, so they are the two spellings a name
-cannot have.
+`define`, `return` and `sum` are reserved words, so they are the three spellings
+a name cannot have.
 
 Names resolve **top to bottom**, like reading a script. A name works only below
 the line that defines it, so using one earlier is an `undefined name` error — and
@@ -249,6 +250,56 @@ nothing is drawn after it.
 While a `{` has no `}` yet, there is no block: that line says `unclosed '{'` and
 every line under it is still evaluated as itself, so opening a brace at the top
 of a long scratchpad never blanks the results below it.
+
+## Summation
+
+`sum(first, last, f)` adds `f` across a range of whole numbers, both ends
+included:
+
+```
+ 1 define f(x): x ^ 2
+ 2 sum(3, 6, f) = 86
+```
+
+The third slot is the one place in calc where a **name is not a value**: you hand
+over the function itself, so `f` is written without parentheses. There is nothing
+to call it with yet — the sum supplies each number in turn.
+
+A function of two parameters needs one sum per parameter, nested like sigma
+notation, and **the outermost sum drives the first parameter**:
+
+```
+ 1 define f(x, y): x + y
+ 2 sum(1, 5, sum(1, 3, f)) = 75
+```
+
+There `x` runs 1..5 from the outer sum and `y` runs 1..3 from the inner one, so
+every pair is visited: fifteen terms. An inner sum's own bounds are ordinary
+expressions, and they cannot see the outer number — that number is bound to a
+*parameter of the closure*, not to a name in scope.
+
+Because a function's parameter count is known before anything runs, a nest of the
+wrong depth is reported **as you type** rather than on evaluation:
+
+```
+sum(3, 6, f)  Error: f() takes 2 arguments, so this sum needs one more sum around it
+```
+
+Built-in functions are closures like any other, so `sum(1, 4, sqrt)` works and
+`pow` — taking two — asks to be nested.
+
+| | |
+| --- | --- |
+| `sum(3, 3, f)` | one term, `f(3)` |
+| `sum(6, 3, f)` | `0` — a backwards range is the empty sum, and `f` is never called |
+| `sum(1, 4.5, f)` | `Error: sum needs whole numbers, got 4.5` |
+| `sum(1, inf, f)` | `Error: sum needs a finite range` |
+| `sum(1, 1000000000, f)` | `Error: sum has too many terms (limit 10000)` |
+
+That last limit is what keeps a mistyped range from freezing the editor: every
+line is recomputed on every keystroke, so a sum has to stay cheap enough to be
+re-added between two letters. Nested sums are counted together, since it is their
+product that does the work.
 
 ## Infinity
 

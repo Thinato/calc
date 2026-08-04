@@ -32,6 +32,22 @@ std::optional<BinaryInfo> binary_info(TokenKind kind) {
   }
 }
 
+struct ClosureShape {
+  std::string name;
+  std::size_t arity = 0;
+  std::size_t remaining = 0;
+};
+
+std::string arity_phrase(const std::string& name, std::size_t arity) {
+  return name + "() takes " + std::to_string(arity) +
+         (arity == 1 ? " argument" : " arguments");
+}
+
+std::string nesting_phrase(std::size_t remaining) {
+  if (remaining == 1) return "one more sum";
+  return std::to_string(remaining) + " more sums";
+}
+
 class Parser {
  public:
   Parser(const std::vector<Token>& tokens, const Environment* environment)
@@ -129,6 +145,20 @@ class Parser {
       return inner;
     }
 
+    if (token.kind == TokenKind::Sum) {
+      Result<NodePtr> sum = parse_sum();
+      if (!sum) return sum.error();
+
+      const ClosureShape shape = shape_of(*sum.value());
+      if (shape.remaining != 0) {
+        return make_error(ErrorCode::SumClosure,
+                          arity_phrase(shape.name, shape.arity) + ", so this sum needs " +
+                              nesting_phrase(shape.remaining) + " around it",
+                          token.column);
+      }
+      return sum;
+    }
+
     if (token.kind == TokenKind::Identifier) {
       const bool looks_like_call = tokens_[position_ + 1].kind == TokenKind::LParen;
       if (looks_like_call || arity_of(token.text).has_value()) return parse_call();
@@ -171,13 +201,96 @@ class Parser {
     advance();
 
     if (args.size() != *arity) {
-      return make_error(ErrorCode::WrongArity,
-                        name_token.text + "() takes " + std::to_string(*arity) +
-                            (*arity == 1 ? " argument, got " : " arguments, got ") +
-                            std::to_string(args.size()),
-                        name_token.column);
+      return make_error(
+          ErrorCode::WrongArity,
+          arity_phrase(name_token.text, *arity) + ", got " + std::to_string(args.size()),
+          name_token.column);
     }
     return make_node<Call>(name_token.text, std::move(args), name_token.column);
+  }
+
+  ClosureShape shape_of(const Node& node) const {
+    if (const auto* ref = std::get_if<FuncRef>(&node.kind)) {
+      const std::size_t arity = arity_of(ref->name).value_or(0);
+      return ClosureShape{ref->name, arity, arity};
+    }
+    ClosureShape shape = shape_of(*std::get<Sum>(node.kind).closure);
+    --shape.remaining;
+    return shape;
+  }
+
+  Error three_arguments(std::size_t column) const {
+    return make_error(
+        ErrorCode::SumClosure,
+        "sum takes three arguments: a first value, a last value, and a function", column);
+  }
+
+  Result<NodePtr> parse_closure() {
+    if (peek().kind == TokenKind::Sum) return parse_sum();
+
+    if (peek().kind != TokenKind::Identifier) {
+      return make_error(ErrorCode::SumClosure, "sum's third argument must be a function",
+                        peek().column);
+    }
+    const Token name = advance();
+    if (peek().kind == TokenKind::LParen) {
+      return make_error(ErrorCode::SumClosure,
+                        "sum's third argument must be a function, not a call",
+                        name.column);
+    }
+    if (!arity_of(name.text).has_value()) {
+      return make_error(ErrorCode::UnknownFunction,
+                        "unknown function '" + name.text + "'", name.column);
+    }
+    return make_node<FuncRef>(name.text, name.column);
+  }
+
+  Result<NodePtr> parse_sum() {
+    const Token keyword = advance();
+    if (peek().kind != TokenKind::LParen) {
+      return make_error(ErrorCode::ExpectedCallParen, "expected '(' after 'sum'",
+                        peek().column);
+    }
+    const std::size_t open_column = advance().column;
+
+    Sum sum;
+    sum.column = keyword.column;
+
+    Result<NodePtr> first = parse_expression(0);
+    if (!first) return first.error();
+    sum.first = std::move(first.value());
+    if (peek().kind != TokenKind::Comma) return three_arguments(keyword.column);
+    advance();
+
+    Result<NodePtr> last = parse_expression(0);
+    if (!last) return last.error();
+    sum.last = std::move(last.value());
+    if (peek().kind != TokenKind::Comma) return three_arguments(keyword.column);
+    advance();
+
+    Result<NodePtr> closure = parse_closure();
+    if (!closure) return closure.error();
+
+    const ClosureShape shape = shape_of(*closure.value());
+    if (shape.remaining == 0) {
+      if (std::holds_alternative<Sum>(closure.value()->kind)) {
+        return make_error(ErrorCode::SumClosure,
+                          "a sum over " + shape.name + "() is already a number",
+                          keyword.column);
+      }
+      return make_error(
+          ErrorCode::SumClosure,
+          shape.name + "() takes no arguments, so there is nothing to sum over",
+          keyword.column);
+    }
+    sum.closure = std::move(closure.value());
+
+    if (peek().kind == TokenKind::Comma) return three_arguments(keyword.column);
+    if (peek().kind != TokenKind::RParen) {
+      return make_error(ErrorCode::UnbalancedParen, "unclosed '('", open_column);
+    }
+    advance();
+    return std::make_unique<Node>(Node{std::move(sum)});
   }
 
   Result<Statement> parse_definition() {

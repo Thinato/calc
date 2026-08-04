@@ -20,7 +20,7 @@ std::vector<SyntaxSpan> syntax_spans(std::string_view line, const FunctionLookup
       while (index < line.size() && is_ident_continue(line[index])) ++index;
       const std::string_view word = line.substr(start, index - start);
 
-      if (word == "define" || word == "return") {
+      if (word == "define" || word == "return" || word == "sum") {
         spans.push_back(SyntaxSpan{start, index, SyntaxKind::Keyword});
       } else if (find_function(word) != nullptr || (known && known(word))) {
         spans.push_back(SyntaxSpan{start, index, SyntaxKind::Function});
