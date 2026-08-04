@@ -5,9 +5,12 @@
 #include <string>
 #include <string_view>
 
+#include "core/plot.hpp"
 #include "doc/document.hpp"
 
 namespace calc {
+
+class ResultCache;
 
 struct ExOutcome {
   std::string message;
@@ -16,8 +19,11 @@ struct ExOutcome {
   std::optional<std::size_t> goto_row;
   std::optional<bool> line_numbers;
   std::optional<std::string> open_url;
+  std::optional<PlotSpec> plot;
+  bool close_plot = false;
 };
 
-ExOutcome execute_ex_command(std::string_view command, Document& document);
+ExOutcome execute_ex_command(std::string_view command, Document& document,
+                             const ResultCache* results = nullptr);
 
 }

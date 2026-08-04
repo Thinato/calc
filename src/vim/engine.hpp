@@ -8,6 +8,7 @@
 #include <utility>
 #include <vector>
 
+#include "core/plot.hpp"
 #include "doc/document.hpp"
 #include "doc/results.hpp"
 #include "vim/keys.hpp"
@@ -37,6 +38,7 @@ class VimEngine {
   Mode mode() const { return mode_; }
   bool quit_requested() const { return quit_requested_; }
   bool line_numbers() const { return line_numbers_; }
+  const std::optional<PlotSpec>& plot() const { return plot_; }
 
   const std::string& command_line() const { return command_line_; }
   const std::string& message() const { return message_; }
@@ -103,6 +105,7 @@ class VimEngine {
   Mode mode_ = Mode::Normal;
   bool quit_requested_ = false;
   bool line_numbers_ = true;
+  std::optional<PlotSpec> plot_;
 
   int count_ = 0;
   Operator operator_ = Operator::None;

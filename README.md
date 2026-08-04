@@ -41,7 +41,7 @@ automatically, so a fresh clone needs nothing installed.
 ```sh
 cmake --preset default
 cmake --build build
-ctest --test-dir build          # 227 tests, no terminal required
+ctest --test-dir build          # 253 tests, no terminal required
 ./build/calc                    # scratch buffer
 ./build/calc notes.calc         # open a file
 ```
@@ -127,7 +127,7 @@ Every colour answers one question, so the screen can be read at a glance:
 | light blue | a function: `sqrt`, `pow`, and the ones you define |
 | yellow | a variable, where it is defined |
 | magenta | a constant, where it is defined |
-| cyan | a result |
+| cyan | a result, and the curve `:plot` draws out of one |
 | red | an error |
 | bold | `define` and `return` — structure, not a value |
 
@@ -247,6 +247,54 @@ While a `{` has no `}` yet, there is no block: that line says `unclosed '{'` and
 every line under it is still evaluated as itself, so opening a brace at the top
 of a long scratchpad never blanks the results below it.
 
+## Plotting
+
+`:plot` draws the function the cursor is on, in braille, in a panel below the
+buffer:
+
+```
+ 1 define bell(x): E ^ -(x ^ 2)
+~
+──────────────────────────────────────────────────────────────
+ bell  x -3..3  y 0.000123..1
+       1                       ⣀⠴⠚⠉⠍⠙⠲⢄⡀
+                             ⣠⠞⠁   ⠅   ⠙⢦⡀
+                          ⢀⡤⠊      ⠅     ⠈⠢⣄
+                       ⢀⣠⠔⠋        ⠅       ⠈⠓⢤⣀
+0.000123 ⣀⣀⣀⣀⣀⣀⣀⣀⣀⣠⡤⡤⡖⡚⡉⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡅⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡈⡙⡒⡦⡤⣤⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀
+         -3                                                  3
+```
+
+The panel **stays and redraws as you type**, like every other result here, so
+editing the body animates the curve. `:noplot` closes it.
+
+Two dimensions means one parameter: `hyp(a, b)` is refused. `:plot` finds what
+to draw in the order you would point at it — the definition the cursor is in
+(the `define` row or any row of its body), else the first one-parameter function
+named on the cursor line, so it works on a `bell(1)` line too. `:plot sqrt`
+names one outright, builtins included.
+
+x runs `-10..10` unless you say otherwise, and y is scaled to fit what was
+found:
+
+| command | what it draws |
+| --- | --- |
+| `:plot` | the function under the cursor, x `-10..10` |
+| `:plot bell` | that one instead |
+| `:plot bell -3..3` | a chosen x range |
+| `:plot bell -3..3 0..1` | a chosen y range too, instead of scaling to fit |
+
+The curve is cyan because it *is* a result; the axes are dim, and the labels
+give the corners of what you are looking at. Where the function has no value the
+curve breaks rather than joining across the gap, so `1 / x` shows two branches
+instead of a line through the pole — though scaling to fit a pole squashes
+everything else flat, which is what the y range argument is for.
+
+A body's error surfaces here the way it does on a calling line: the panel says
+`in f(): undefined name 'nope'` and draws nothing. Delete the definition while
+the panel is open and it says `unknown function`, then draws again when you type
+it back.
+
 ## Keys
 
 **Motions** `h j k l` · `0 ^ $` · `w W b B e E` · `gg G` · `f F t T` · `%` ·
@@ -276,7 +324,8 @@ goes to the system clipboard
 | `gY` | yank `expression = result` |
 
 **Commands** `:w [file]` · `:wq` `:x` · `:q` `:q!` · `:e[!] file` ·
-`:42` jumps to a line · `:set number` / `:set nonumber` · `:help` ·
+`:42` jumps to a line · `:set number` / `:set nonumber` ·
+`:plot [name] [x] [y]` charts a function · `:noplot` closes it · `:help` ·
 `:github` opens [the project page](https://github.com/Thinato/calc) in a browser
 
 ## Results are not text
@@ -300,7 +349,8 @@ you type.)
 ## Layout
 
 ```
-src/core/    expression language: lexer, parser, eval, environment, formatting
+src/core/    expression language: lexer, parser, eval, environment, formatting,
+             and the sampling behind :plot — the drawing of it lives in src/ui/
 src/doc/     the buffer, cursor, undo, result cache, file IO
 src/vim/     the modal editor: motions, operators, state machine, ex commands
 src/ui/      FTXUI rendering, the session, and the terminal's event loop

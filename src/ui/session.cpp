@@ -50,7 +50,9 @@ ftxui::Component make_view(SessionRef session, ftxui::ScreenInteractive& screen,
   auto view = ftxui::Renderer([session, &screen] {
     EditorSession& active = session();
     const auto rows = static_cast<std::size_t>(std::max(screen.dimy(), 1));
-    active.viewport.height = rows > kChromeRows ? rows - kChromeRows : 1;
+    active.viewport.plot_height = plot_rows(rows, active.engine.plot().has_value());
+    const std::size_t chrome = kChromeRows + active.viewport.plot_height;
+    active.viewport.height = rows > chrome ? rows - chrome : 1;
 
     apply_scroll(active.viewport, active.engine.take_scroll_request(), active.document);
     follow_cursor(active.viewport, active.document);

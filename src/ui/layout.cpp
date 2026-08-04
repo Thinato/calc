@@ -6,6 +6,7 @@
 
 #include "core/syntax.hpp"
 #include "doc/utf8.hpp"
+#include "ui/plot_view.hpp"
 #include "ui/theme.hpp"
 
 namespace calc {
@@ -164,6 +165,15 @@ Element status_line(const Document& document, const VimEngine& engine) {
 
 }
 
+std::size_t plot_rows(std::size_t screen_rows, bool plot_open) {
+  if (!plot_open || screen_rows <= kChromeRows + kPlotBufferFloor) return 0;
+
+  const std::size_t available = screen_rows - kChromeRows - kPlotBufferFloor;
+  const std::size_t wanted = std::max(screen_rows * 2 / 5, kPlotMinRows);
+  const std::size_t rows = std::min(wanted, available);
+  return rows < kPlotPanelChrome + 1 ? 0 : rows;
+}
+
 void follow_cursor(Viewport& viewport, const Document& document) {
   if (viewport.height == 0) return;
 
@@ -288,12 +298,17 @@ ftxui::Element render_frame(const Document& document, const ResultCache& results
     rows.push_back(hbox(std::move(spans)));
   }
 
-  return vbox({
-      vbox(std::move(rows)),
-      separatorLight() | color(theme::separator_dim()),
-      status_line(document, engine),
-      message_line(engine),
-  });
+  Elements frame;
+  frame.push_back(vbox(std::move(rows)));
+  if (engine.plot().has_value() && viewport.plot_height > kPlotPanelChrome) {
+    frame.push_back(
+        plot_panel(*engine.plot(), results.environment(), viewport.plot_height));
+  }
+  frame.push_back(separatorLight() | color(theme::separator_dim()));
+  frame.push_back(status_line(document, engine));
+  frame.push_back(message_line(engine));
+
+  return vbox(std::move(frame));
 }
 
 }

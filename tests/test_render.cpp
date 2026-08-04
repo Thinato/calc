@@ -34,9 +34,10 @@ std::vector<std::string> render_lines(std::string_view initial, std::string_view
   results.refresh(document);
 
   Viewport viewport;
-  viewport.height = static_cast<std::size_t>(height) > kChromeRows
-                        ? static_cast<std::size_t>(height) - kChromeRows
-                        : 1;
+  const auto rows = static_cast<std::size_t>(height);
+  viewport.plot_height = plot_rows(rows, engine.plot().has_value());
+  const std::size_t chrome = kChromeRows + viewport.plot_height;
+  viewport.height = rows > chrome ? rows - chrome : 1;
   follow_cursor(viewport, document);
 
   auto screen = ftxui::Screen::Create(ftxui::Dimension::Fixed(width),
@@ -109,6 +110,35 @@ std::string color_at(const std::vector<std::string>& lines, std::string_view nee
     if (at != std::string::npos) return foreground[at];
   }
   return "[not on screen]";
+}
+
+bool is_braille_at(const std::string& text, std::size_t index) {
+  if (index + 2 >= text.size()) return false;
+  const auto first = static_cast<unsigned char>(text[index]);
+  const auto second = static_cast<unsigned char>(text[index + 1]);
+  return first == 0xE2 && second >= 0xA0 && second <= 0xA3;
+}
+
+bool has_braille(const std::vector<std::string>& lines) {
+  for (const std::string& line : lines) {
+    const std::string visible = plain(line);
+    for (std::size_t index = 0; index < visible.size(); ++index) {
+      if (is_braille_at(visible, index)) return true;
+    }
+  }
+  return false;
+}
+
+std::string braille_color(const std::vector<std::string>& lines) {
+  for (const std::string& line : lines) {
+    const std::string visible = plain(line);
+    for (std::size_t index = 0; index < visible.size(); ++index) {
+      if (is_braille_at(visible, index)) {
+        return color_at(lines, visible.substr(index, 3));
+      }
+    }
+  }
+  return "[no braille on screen]";
 }
 
 std::string expected(ftxui::Color (*theme_color)()) {
@@ -353,4 +383,68 @@ TEST_CASE("the viewport follows the cursor through a long buffer") {
   const auto lines = render_lines(many, "G", 44, 10);
   CHECK(contains(lines, "60 + 0 = 60"));
   CHECK_FALSE(contains(lines, " 1 1 + 0"));
+}
+
+namespace {
+
+std::string plottable_buffer() {
+  std::string text = "define f(x): x ^ 2\n";
+  for (int index = 1; index <= 13; ++index) {
+    text += std::to_string(index) + " + 0\n";
+  }
+  return text;
+}
+
+}
+
+TEST_CASE("the plot panel draws a curve and gives up buffer rows for it") {
+  const std::string buffer = plottable_buffer();
+
+  const auto quiet = render_lines(buffer, "", 44, 20);
+  const auto drawn = render_lines(buffer, ":plot<cr>", 44, 20);
+
+  CHECK(contains(quiet, "13 + 0 = 13"));
+  CHECK_FALSE(has_braille(quiet));
+
+  CHECK(has_braille(drawn));
+  CHECK(contains(drawn, "x -10..10"));
+  CHECK(contains(drawn, "100"));
+  CHECK_FALSE(contains(drawn, "13 + 0 = 13"));
+}
+
+TEST_CASE("the curve is drawn in the colour of a result") {
+  const auto lines = render_lines("define f(x): x\n", ":plot f 1..2<cr>", 44, 20);
+  REQUIRE(has_braille(lines));
+  CHECK(braille_color(lines) == expected(&theme::result));
+}
+
+TEST_CASE("noplot gives the buffer its rows back") {
+  const auto lines = render_lines(plottable_buffer(), ":plot<cr>:noplot<cr>", 44, 20);
+  CHECK_FALSE(has_braille(lines));
+  CHECK(contains(lines, "13 + 0 = 13"));
+}
+
+TEST_CASE("a plot of a function that fails everywhere says why") {
+  const auto lines = render_lines("define f(x): x + nope\n", ":plot<cr>", 60, 20);
+  CHECK(contains(lines, "in f(): undefined name 'nope'"));
+  CHECK_FALSE(has_braille(lines));
+}
+
+TEST_CASE("a plot whose definition is deleted says so and keeps its panel") {
+  const auto lines = render_lines("define f(x): x ^ 2\n", ":plot<cr>dd", 44, 20);
+  CHECK(contains(lines, "unknown function 'f'"));
+}
+
+TEST_CASE("a plot needs room, and a short terminal has none to give") {
+  const std::string buffer = "define f(x): x ^ 2\n";
+
+  CHECK(plot_rows(20, true) == 8);
+  CHECK(plot_rows(30, true) == 12);
+  CHECK(plot_rows(20, false) == 0);
+  CHECK(plot_rows(9, true) == 0);
+  CHECK(plot_rows(2, true) == 0);
+
+  const auto cramped = render_lines(buffer, ":plot<cr>", 44, 8);
+  CHECK_FALSE(has_braille(cramped));
+  CHECK(contains(cramped, "define f(x): x ^ 2"));
 }
