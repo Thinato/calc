@@ -47,6 +47,7 @@ std::string_view describe(TokenKind kind) {
     case TokenKind::Identifier: return "a name";
     case TokenKind::Define: return "'define'";
     case TokenKind::Return: return "'return'";
+    case TokenKind::Sum: return "'sum'";
     case TokenKind::End: return "end of line";
   }
   return "something";
@@ -128,6 +129,8 @@ Result<std::vector<Token>> tokenize(std::string_view line) {
         token.kind = TokenKind::Define;
       } else if (span == "return") {
         token.kind = TokenKind::Return;
+      } else if (span == "sum") {
+        token.kind = TokenKind::Sum;
       } else {
         token.kind = TokenKind::Identifier;
       }

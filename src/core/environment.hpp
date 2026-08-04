@@ -14,6 +14,8 @@
 
 namespace calc {
 
+inline constexpr std::size_t kMaxSumTerms = 10000;
+
 struct Binding {
   Value value = 0;
   bool is_constant = false;
@@ -41,6 +43,10 @@ class Environment {
   InfinityMode infinity_mode() const { return mode_; }
   void set_infinity_mode(InfinityMode mode) { mode_ = mode; }
 
+  bool has_sum_budget() const { return sum_budget_ != nullptr; }
+  Environment with_sum_budget() const;
+  bool spend_sum_terms(std::size_t count) const;
+
   static bool is_constant_name(std::string_view name);
   static bool is_infinity_name(std::string_view name);
 
@@ -49,6 +55,7 @@ class Environment {
   std::map<std::string, std::shared_ptr<const UserFunction>, std::less<>> functions_;
   std::size_t depth_ = 0;
   InfinityMode mode_ = InfinityMode::Signed;
+  std::shared_ptr<std::size_t> sum_budget_;
 };
 
 }

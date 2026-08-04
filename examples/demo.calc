@@ -72,6 +72,16 @@ with_tax(subtotal)
 define bell(x): E ^ -(x ^ 2)
 define ripple(x): x - x ^ 3 / 3
 
+# sum adds a function across a range, both ends included. The third slot takes
+# the function itself, so square goes in without its parentheses.
+define square(x): x ^ 2
+sum(3, 6, square)
+
+# A function of two parameters needs one sum per parameter, nested like sigma
+# notation. The outer sum drives x, the inner one y, so every pair is visited.
+define pair(x, y): x + y
+sum(1, 5, sum(1, 3, pair))
+
 # Infinity is a value you can hold, in two spellings. Dividing by zero reaches
 # it, but a finite sum that overflows is still reported: infinity is something
 # you ask for, not something you fall into.

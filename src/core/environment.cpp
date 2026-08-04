@@ -53,6 +53,19 @@ Environment Environment::child_for_call() const {
   return child;
 }
 
+Environment Environment::with_sum_budget() const {
+  Environment copy = *this;
+  copy.sum_budget_ = std::make_shared<std::size_t>(kMaxSumTerms);
+  return copy;
+}
+
+bool Environment::spend_sum_terms(std::size_t count) const {
+  if (sum_budget_ == nullptr) return true;
+  if (*sum_budget_ < count) return false;
+  *sum_budget_ -= count;
+  return true;
+}
+
 bool Environment::is_constant_name(std::string_view name) {
   return std::none_of(name.begin(), name.end(),
                       [](char byte) { return byte >= 'a' && byte <= 'z'; });

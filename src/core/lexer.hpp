@@ -28,6 +28,7 @@ enum class TokenKind {
   Identifier,
   Define,
   Return,
+  Sum,
   End,
 };
 

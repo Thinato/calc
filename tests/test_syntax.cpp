@@ -93,11 +93,18 @@ TEST_CASE("spans are ascending and never overlap") {
   }
 }
 
-TEST_CASE("the two reserved words are structure, not names") {
+TEST_CASE("the three reserved words are structure, not names") {
   CHECK(described("define f(x): x ^ 2") == "keyword 'define'");
   CHECK(described("  return z") == "keyword 'return'");
   CHECK(described("# define f(x): x") == "comment '# define f(x): x'");
   CHECK(described("defined") == "");
+}
+
+TEST_CASE("a sum reads as structure, and its closure as a function") {
+  const FunctionLookup known = [](std::string_view name) { return name == "f"; };
+
+  CHECK(described("sum(3, 6, f)", known) == "keyword 'sum', function 'f'");
+  CHECK(described("summary") == "");
 }
 
 TEST_CASE("a function the buffer defined for itself is highlighted like a built-in") {

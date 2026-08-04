@@ -43,8 +43,20 @@ struct Call {
   std::size_t column = 0;
 };
 
+struct FuncRef {
+  std::string name;
+  std::size_t column = 0;
+};
+
+struct Sum {
+  NodePtr first;
+  NodePtr last;
+  NodePtr closure;
+  std::size_t column = 0;
+};
+
 struct Node {
-  std::variant<Number, Identifier, Unary, Binary, Call> kind;
+  std::variant<Number, Identifier, Unary, Binary, Call, FuncRef, Sum> kind;
 };
 
 struct FunctionDecl;
