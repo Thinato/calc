@@ -130,6 +130,22 @@ TEST_CASE("a file survives a save and reload unchanged") {
   CHECK(reloaded.to_text() == original);
 }
 
+TEST_CASE(":e shows the file it opened, not the one it replaced") {
+  const TempFile file("calc_test_stale.calc");
+  file.write("7 + 7\n");
+
+  Document document = Document::from_text("aaa = 111\nbbb = 222\n");
+  ResultCache results;
+  results.refresh(document);
+  REQUIRE(results.at(0).text == "111");
+
+  REQUIRE_FALSE(execute_ex_command("e " + file.path(), document).is_error);
+  results.refresh(document);
+
+  CHECK(results.size() == 1);
+  CHECK(results.at(0).text == "14");
+}
+
 TEST_CASE(":e opens a file, and a missing one starts empty") {
   SUBCASE("existing") {
     const TempFile file("calc_test_edit.calc");

@@ -8,7 +8,7 @@ its result is shown after it and cannot be edited.
  2 sqrt(16) + pow(2, 10) = 1028
  3 subtotal = 128.40
  4 subtotal * 0.0825 = 10.593
- 5 subtotal / 0  Error: division by zero
+ 5 subtotal / 0 = inf
  6
 ~
 ────────────────────────────────────────────────────────────
@@ -41,7 +41,7 @@ automatically, so a fresh clone needs nothing installed.
 ```sh
 cmake --preset default
 cmake --build build
-ctest --test-dir build          # 253 tests, no terminal required
+ctest --test-dir build          # 273 tests, no terminal required
 ./build/calc                    # scratch buffer
 ./build/calc notes.calc         # open a file
 ```
@@ -109,6 +109,7 @@ that entry point is only ever compiled by Emscripten.
 | `name = expr` | define a variable or constant |
 | `define f(x): expr` | define a function |
 | `define f(x) { … }` | the same, with a body of several statements |
+| `inf` `infinity` | infinity, in two spellings |
 | `#` | comment to the end of the line |
 
 Precedence is the ordinary mathematical one, so `1 + 2 * 3` is `7` and `-2^2` is
@@ -148,7 +149,7 @@ the basic sixteen.
 A line that does not work says why, in red, where its result would have gone:
 
 ```
- 1 1 / 0  Error: division by zero
+ 1 0 / 0  Error: division by zero
  2 nope * 2  Error: undefined name 'nope'
 ```
 
@@ -175,8 +176,10 @@ Which kind of name you get is decided by spelling alone:
 | **variable** | holds at least one lowercase letter — `x`, `test`, `helloWorld`, `xOne`. Reassign it freely. |
 | **constant** | holds no lowercase letters — `PI`, `RATE`, `TEST_ONE`. Defining it twice is an error that names the line it came from. |
 
-`PI`, `E` and `TAU` are built in, and protected by the same rule, so `PI = 3` is
-an error rather than a silent redefinition.
+`PI`, `E`, `TAU`, `inf` and `infinity` are built in, and protected by the same
+rule, so `PI = 3` is an error rather than a silent redefinition. The protection is
+what the name holds, not how it is spelled: `INFINITY` is an ordinary constant you
+are free to define.
 
 Names are **letters and underscores only**. `x1`, `1_x` and `x.y` are rejected,
 and the message quotes what you typed rather than mis-reading it as something
@@ -246,6 +249,59 @@ nothing is drawn after it.
 While a `{` has no `}` yet, there is no block: that line says `unclosed '{'` and
 every line under it is still evaluated as itself, so opening a brace at the top
 of a long scratchpad never blanks the results below it.
+
+## Infinity
+
+`inf` — or `infinity`, the same value written longer — is a value you can hold,
+name and compute with:
+
+```
+ 1 limit = 1 / 0 = inf
+ 2 limit + 1 = inf
+ 3 1 / limit = 0
+ 4 limit - limit  Error: result is undefined
+```
+
+**Infinity is something you ask for, never something you fall into.** A finite
+calculation that runs off the end of a double is still reported rather than
+rounded up to infinity, which is the difference between these two lines:
+
+```
+ 1 2 ^ inf = inf
+ 2 2 ^ 100000  Error: result is too large
+```
+
+The rule is that an infinite result is kept when its inputs explain it — an
+operand was already infinite, or you divided by a zero denominator — and is
+`result is too large` otherwise. A number too big to write down, like `1e400`,
+is refused where you typed it for the same reason.
+
+`inf - inf`, `inf * 0` and `inf / inf` are `result is undefined`. There is no
+`nan` to hold: a line still either shows a value or says why it cannot.
+
+### Two kinds of infinity
+
+What `1 / 0` means depends on which line you are working on, so it is a setting:
+
+| | `:set infinity=signed` (default) | `:set infinity=projective` |
+| --- | --- | --- |
+| what infinity is | two ends of the number line, `inf` and `-inf` | one point, reached from either direction |
+| `1 / 0` | `inf` | `inf` |
+| `-1 / 0` | `-inf` | `inf` |
+| `-inf` | `-inf` | `inf` — there is only one, so the sign is dropped |
+| `inf + inf` | `inf` | `Error: result is undefined` |
+| `sqrt(-inf)` | `Error: sqrt of a negative number` | `inf` |
+| `0 / 0` | `Error: division by zero` | `Error: division by zero` |
+
+Signed is the [extended real line](https://en.wikipedia.org/wiki/Extended_real_number_line),
+which is what IEEE-754 floating point and every programming language give you.
+Projective is the [real projective line](https://en.wikipedia.org/wiki/Real_projective_line),
+where the two ends are glued into a single point — so division is total apart
+from `0 / 0`, at the price of `inf + inf` no longer having an answer.
+
+`:set infinity?` reports the current mode. Switching recomputes the whole buffer
+as you would expect. It is a session setting: a `.calc` file records the
+expressions you typed and not the mode you read them in.
 
 ## Plotting
 
@@ -325,6 +381,7 @@ goes to the system clipboard
 
 **Commands** `:w [file]` · `:wq` `:x` · `:q` `:q!` · `:e[!] file` ·
 `:42` jumps to a line · `:set number` / `:set nonumber` ·
+`:set infinity=signed` / `:set infinity=projective` ·
 `:plot [name] [x] [y]` charts a function · `:noplot` closes it · `:help` ·
 `:github` opens [the project page](https://github.com/Thinato/calc) in a browser
 

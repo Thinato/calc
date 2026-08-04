@@ -12,6 +12,16 @@
 #include "core/parser.hpp"
 
 namespace calc {
+namespace {
+
+bool is_infinity_literal(const Node& node) {
+  const Node* inner = &node;
+  if (const auto* unary = std::get_if<Unary>(&node.kind)) inner = unary->operand.get();
+  const auto* identifier = std::get_if<Identifier>(&inner->kind);
+  return identifier != nullptr && Environment::is_infinity_name(identifier->name);
+}
+
+}
 
 LineEval evaluate_line(std::string_view line, Environment& environment, std::size_t row) {
   LineEval outcome;
@@ -66,7 +76,8 @@ LineEval evaluate_line(std::string_view line, Environment& environment, std::siz
     outcome.assigned_name = name;
     outcome.assigned_column = parsed.target_column;
     outcome.assigned_constant = Environment::is_constant_name(name);
-    outcome.show_result = !is_literal(*parsed.expression);
+    outcome.show_result =
+        !is_literal(*parsed.expression) && !is_infinity_literal(*parsed.expression);
   }
 
   outcome.value = value.value();

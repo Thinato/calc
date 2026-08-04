@@ -39,6 +39,7 @@ class VimEngine {
   bool quit_requested() const { return quit_requested_; }
   bool line_numbers() const { return line_numbers_; }
   const std::optional<PlotSpec>& plot() const { return plot_; }
+  InfinityMode infinity_mode() const { return infinity_mode_; }
 
   const std::string& command_line() const { return command_line_; }
   const std::string& message() const { return message_; }
@@ -106,6 +107,7 @@ class VimEngine {
   bool quit_requested_ = false;
   bool line_numbers_ = true;
   std::optional<PlotSpec> plot_;
+  InfinityMode infinity_mode_ = InfinityMode::Signed;
 
   int count_ = 0;
   Operator operator_ = Operator::None;

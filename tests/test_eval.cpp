@@ -94,10 +94,11 @@ TEST_CASE("a failed line yields an error and no result") {
 }
 
 TEST_CASE("arithmetic errors") {
-  SUBCASE("division by zero") {
-    CHECK(error_code_for("1 / 0") == ErrorCode::DivisionByZero);
+  SUBCASE("only zero divided by zero is an error") {
     CHECK(error_code_for("0 / 0") == ErrorCode::DivisionByZero);
-    CHECK(error_code_for("1 / (2 - 2)") == ErrorCode::DivisionByZero);
+    CHECK(error_code_for("(2 - 2) / (2 - 2)") == ErrorCode::DivisionByZero);
+    CHECK(shown("1 / 0") == "inf");
+    CHECK(shown("1 / (2 - 2)") == "inf");
   }
   SUBCASE("square root of a negative number") {
     CHECK(error_code_for("sqrt(-1)") == ErrorCode::DomainError);
@@ -113,7 +114,7 @@ TEST_CASE("arithmetic errors") {
 }
 
 TEST_CASE("error columns point at the offending character") {
-  const LineEval outcome = evaluate_line("10 + 1 / 0");
+  const LineEval outcome = evaluate_line("10 + 0 / 0");
   REQUIRE(outcome.error.has_value());
   CHECK(outcome.error->column == 7);
 }
