@@ -66,6 +66,12 @@ hyp(3, 4)
 define with_tax(amount): amount * (1 + RATE)
 with_tax(subtotal)
 
+# Put the cursor on either line below and type :plot to see its shape. The
+# chart stays as you edit, so change an exponent and watch the curve move.
+# :noplot closes it, and :plot bell -3..3 zooms in on the part worth seeing.
+define bell(x): E ^ -(x ^ 2)
+define ripple(x): x - x ^ 3 / 3
+
 # These lines show why they failed, beside them. Move onto one and its
 # reason hides, so editing it is not a running commentary.
 1 +

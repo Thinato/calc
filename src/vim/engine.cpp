@@ -834,9 +834,11 @@ void VimEngine::feed_command_line(const Key& key) {
 }
 
 void VimEngine::run_ex(const std::string& command) {
-  const ExOutcome outcome = execute_ex_command(command, document_);
+  const ExOutcome outcome = execute_ex_command(command, document_, &results_);
 
   if (outcome.line_numbers.has_value()) line_numbers_ = *outcome.line_numbers;
+  if (outcome.close_plot) plot_.reset();
+  if (outcome.plot.has_value()) plot_ = *outcome.plot;
   if (outcome.goto_row.has_value()) {
     const std::size_t row = std::min(*outcome.goto_row, document_.last_row());
     document_.set_cursor(Cursor{row, first_non_blank(document_, row)});
