@@ -82,6 +82,14 @@ sum(3, 6, square)
 define pair(x, y): x + y
 sum(1, 5, sum(1, 3, pair))
 
+# Factorial is written after the number and binds tighter than anything else,
+# so the second line is 2^6. All 171 factorials a double can hold are a table
+# built at compile time, which is why 170! answers as fast as 4!.
+4!
+2 ^ 3!
+170!
+sum(1, 5, fact)
+
 # Infinity is a value you can hold, in two spellings. Dividing by zero reaches
 # it, but a finite sum that overflows is still reported: infinity is something
 # you ask for, not something you fall into.

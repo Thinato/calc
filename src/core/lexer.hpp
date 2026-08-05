@@ -17,6 +17,7 @@ enum class TokenKind {
   Star,
   Slash,
   Caret,
+  Bang,
   LParen,
   RParen,
   LBrace,

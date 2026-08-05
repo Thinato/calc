@@ -123,7 +123,18 @@ class Parser {
       if (!operand) return operand.error();
       return make_node<Unary>(op, std::move(operand.value()), token.column);
     }
-    return parse_primary();
+    return parse_postfix();
+  }
+
+  Result<NodePtr> parse_postfix() {
+    Result<NodePtr> value = parse_primary();
+    if (!value) return value;
+
+    while (peek().kind == TokenKind::Bang) {
+      const std::size_t column = advance().column;
+      value = make_node<Factorial>(std::move(value.value()), column);
+    }
+    return value;
   }
 
   Result<NodePtr> parse_primary() {

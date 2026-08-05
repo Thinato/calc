@@ -41,7 +41,7 @@ automatically, so a fresh clone needs nothing installed.
 ```sh
 cmake --preset default
 cmake --build build
-ctest --test-dir build          # 293 tests, no terminal required
+ctest --test-dir build          # 307 tests, no terminal required
 ./build/calc                    # scratch buffer
 ./build/calc notes.calc         # open a file
 ```
@@ -103,9 +103,11 @@ that entry point is only ever compiled by Emscripten.
 | --- | --- |
 | `+` `-` `*` `/` | add, subtract, multiply, divide |
 | `^` | power, right associative: `2^3^2` is `512` |
+| `a!` | factorial, for whole numbers `0` to `170` |
 | `(` `)` | grouping |
 | `pow(a, b)` | power |
 | `sqrt(a)` | square root |
+| `fact(a)` | factorial, as a function |
 | `name = expr` | define a variable or constant |
 | `define f(x): expr` | define a function |
 | `define f(x) { … }` | the same, with a body of several statements |
@@ -114,7 +116,8 @@ that entry point is only ever compiled by Emscripten.
 | `#` | comment to the end of the line |
 
 Precedence is the ordinary mathematical one, so `1 + 2 * 3` is `7` and `-2^2` is
-`-4`. A negative exponent needs no parentheses: `2^-1` is `0.5`.
+`-4`. A negative exponent needs no parentheses: `2^-1` is `0.5`. `!` binds
+tightest of all, so `2^3!` is `2^6`.
 
 Results are formatted the way a calculator should: `3` rather than `3.000000`,
 and `0.1 + 0.2` reads `0.3` rather than `0.30000000000000004`.
@@ -300,6 +303,52 @@ That last limit is what keeps a mistyped range from freezing the editor: every
 line is recomputed on every keystroke, so a sum has to stay cheap enough to be
 re-added between two letters. Nested sums are counted together, since it is their
 product that does the work.
+
+## Factorial
+
+`!` is written after the number, the way it is on paper:
+
+```
+ 1 4! = 24
+ 2 fact(4) = 24
+```
+
+It binds tighter than every other operator — tighter than `^`, and tighter than a
+leading minus sign:
+
+| | |
+| --- | --- |
+| `2^3!` | `64`, because the exponent is `3!` |
+| `-3!` | `-6` — the factorial happens first, then the sign |
+| `3!!` | `720`, read as `(3!)!` — not the double factorial `3·1` |
+| `(2 + 2)!` | `24` |
+
+So `-1!` is `-1`, not an error. To ask for the factorial of a negative number,
+which is where the error lives, write `(-1)!`.
+
+**Nothing is ever computed.** A `double` holds exactly 171 factorials — `0!`
+through `170!` — so all 171 are a table built at compile time, and every `!` is a
+single lookup. That is why a factorial costs nothing on a line being retyped, and
+why there is no limit to configure: past `170!` there is no answer to give.
+
+`22!` is the largest a double holds *exactly*. Beyond it the stored number drifts
+by about one part in 10^16, but results are shown to twelve significant digits,
+which is coarser than that drift — so every digit on screen is correct for all
+171 values.
+
+| | |
+| --- | --- |
+| `0!` | `1` |
+| `22!` | `1.12400072778e+21`, exact |
+| `170!` | `7.25741561531e+306` |
+| `171!` | `Error: result is too large` |
+| `4.5!` | `Error: factorial needs a whole number, got 4.5` |
+| `(-1)!` | `Error: factorial of a negative number` |
+| `inf!` | `Error: factorial needs a finite number` |
+
+`fact` is the same table under a name, and a name is what [summation](#summation)
+needs — an operator cannot be passed to `sum`, so `sum(1, 5, fact)` is `153`
+while `sum(1, 5, !)` is not a thing anyone can write.
 
 ## Infinity
 

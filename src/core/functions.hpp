@@ -20,6 +20,8 @@ struct FunctionDef {
 
 const FunctionDef* find_function(std::string_view name);
 
+Result<Value> factorial(Value n, std::size_t column);
+
 struct UserFunction {
   std::string name;
   std::vector<Param> params;
