@@ -30,6 +30,11 @@ struct Unary {
   std::size_t column = 0;
 };
 
+struct Factorial {
+  NodePtr operand;
+  std::size_t column = 0;
+};
+
 struct Binary {
   char op = '+';
   NodePtr lhs;
@@ -56,7 +61,7 @@ struct Sum {
 };
 
 struct Node {
-  std::variant<Number, Identifier, Unary, Binary, Call, FuncRef, Sum> kind;
+  std::variant<Number, Identifier, Unary, Factorial, Binary, Call, FuncRef, Sum> kind;
 };
 
 struct FunctionDecl;

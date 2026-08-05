@@ -36,7 +36,7 @@ const std::vector<Key>& key_alphabet() {
   static const std::vector<Key> kKeys = [] {
     std::vector<Key> keys;
     for (char byte : std::string("hjkl0^$wbeWBEGgfFtT%{}|dcyxXsDCSYpPurR~Jv"
-                                 "V.nN123456789\"aiIoOAelq:/?+-*^()= 	")) {
+                                 "V.nN123456789\"aiIoOAelq:/?+-*^()=! 	")) {
       keys.push_back(Key::character(byte));
     }
     keys.push_back(Key::special(Key::Type::Escape));

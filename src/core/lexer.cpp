@@ -36,6 +36,7 @@ std::string_view describe(TokenKind kind) {
     case TokenKind::Star: return "'*'";
     case TokenKind::Slash: return "'/'";
     case TokenKind::Caret: return "'^'";
+    case TokenKind::Bang: return "'!'";
     case TokenKind::LParen: return "'('";
     case TokenKind::RParen: return "')'";
     case TokenKind::LBrace: return "'{'";
@@ -145,6 +146,7 @@ Result<std::vector<Token>> tokenize(std::string_view line) {
       case '*': token.kind = TokenKind::Star; break;
       case '/': token.kind = TokenKind::Slash; break;
       case '^': token.kind = TokenKind::Caret; break;
+      case '!': token.kind = TokenKind::Bang; break;
       case '(': token.kind = TokenKind::LParen; break;
       case ')': token.kind = TokenKind::RParen; break;
       case '{': token.kind = TokenKind::LBrace; break;

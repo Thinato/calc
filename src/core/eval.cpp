@@ -258,6 +258,11 @@ Result<Value> evaluate(const Node& node, const Environment& environment) {
     const Value value = unary->op == '-' ? -operand.value() : operand.value();
     return normalized(value, environment.infinity_mode());
   }
+  if (const auto* bang = std::get_if<Factorial>(&node.kind)) {
+    Result<Value> operand = evaluate(*bang->operand, environment);
+    if (!operand) return operand.error();
+    return factorial(operand.value(), bang->column);
+  }
   if (const auto* binary = std::get_if<Binary>(&node.kind)) {
     return evaluate_binary(*binary, environment);
   }

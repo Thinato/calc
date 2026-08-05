@@ -95,6 +95,18 @@ TEST_CASE("sqrt gaps out below zero") {
   CHECK(data.first_error->code == ErrorCode::DomainError);
 }
 
+TEST_CASE("fact is whole numbers only, so it plots as the two ends of the range") {
+  const Buffer buffer("");
+  const PlotData data = buffer.plot("fact");
+
+  CHECK(data.has_points);
+  CHECK(gaps(data) == kPlotSamples - 1);
+  CHECK_FALSE(data.samples.front().ok);
+  CHECK(data.samples.back().y == doctest::Approx(3628800));
+  REQUIRE(data.first_error.has_value());
+  CHECK(data.first_error->message == "factorial of a negative number");
+}
+
 TEST_CASE("a constant function is padded so it sits mid panel") {
   const Buffer buffer("define flat(x): 3\n");
   const PlotData data = buffer.plot("flat");
