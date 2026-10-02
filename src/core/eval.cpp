@@ -58,6 +58,15 @@ Result<Value> evaluate_binary(const Binary& node, const Environment& environment
         return infinity_for(mode, a);
       }
       return checked(a / b, node.column, mode, explained);
+    case '%': {
+      if (b == 0) {
+        return make_error(ErrorCode::DivisionByZero, "modulo by zero", node.column);
+      }
+      // Floored: the result takes the sign of the divisor, so -7 % 3 is 2.
+      Value remainder = std::fmod(a, b);
+      if (remainder != 0 && (remainder < 0) != (b < 0)) remainder += b;
+      return checked(remainder, node.column, mode, explained);
+    }
     case '^': {
       if (a == 0 && b < 0) return infinity_for(mode, a);
       const Value result = std::pow(a, b);

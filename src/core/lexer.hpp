@@ -16,6 +16,7 @@ enum class TokenKind {
   Minus,
   Star,
   Slash,
+  Percent,
   Caret,
   Bang,
   LParen,
