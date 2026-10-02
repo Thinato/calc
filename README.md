@@ -41,7 +41,7 @@ automatically, so a fresh clone needs nothing installed.
 ```sh
 cmake --preset default
 cmake --build build
-ctest --test-dir build          # 307 tests, no terminal required
+ctest --test-dir build          # 313 tests, no terminal required
 ./build/calc                    # scratch buffer
 ./build/calc notes.calc         # open a file
 ```
@@ -103,6 +103,7 @@ that entry point is only ever compiled by Emscripten.
 | --- | --- |
 | `+` `-` `*` `/` | add, subtract, multiply, divide |
 | `^` | power, right associative: `2^3^2` is `512` |
+| `%` | remainder, with the sign of the divisor: `-7 % 3` is `2` |
 | `a!` | factorial, for whole numbers `0` to `170` |
 | `(` `)` | grouping |
 | `pow(a, b)` | power |

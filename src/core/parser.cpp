@@ -27,6 +27,7 @@ std::optional<BinaryInfo> binary_info(TokenKind kind) {
     case TokenKind::Minus: return BinaryInfo{'-', kPrecAdditive, false};
     case TokenKind::Star: return BinaryInfo{'*', kPrecMultiplicative, false};
     case TokenKind::Slash: return BinaryInfo{'/', kPrecMultiplicative, false};
+    case TokenKind::Percent: return BinaryInfo{'%', kPrecMultiplicative, false};
     case TokenKind::Caret: return BinaryInfo{'^', kPrecPower, true};
     default: return std::nullopt;
   }
