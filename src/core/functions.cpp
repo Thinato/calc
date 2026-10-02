@@ -49,10 +49,23 @@ Result<Value> apply_fact(const std::vector<Value>& args, std::size_t column,
   return factorial(args[0], column);
 }
 
+Result<Value> apply_floor(const std::vector<Value>& args, std::size_t, InfinityMode) {
+  return std::floor(args[0]);
+}
+
+Result<Value> apply_ceil(const std::vector<Value>& args, std::size_t, InfinityMode) {
+  return std::ceil(args[0]);
+}
+
+// Halves round away from zero: round(2.5) is 3 and round(-2.5) is -3.
+Result<Value> apply_round(const std::vector<Value>& args, std::size_t, InfinityMode) {
+  return std::round(args[0]);
+}
+
 constexpr std::array kFunctions = {
-    FunctionDef{"sqrt", 1, &apply_sqrt},
-    FunctionDef{"pow", 2, &apply_pow},
-    FunctionDef{"fact", 1, &apply_fact},
+    FunctionDef{"sqrt", 1, &apply_sqrt}, FunctionDef{"pow", 2, &apply_pow},
+    FunctionDef{"fact", 1, &apply_fact}, FunctionDef{"floor", 1, &apply_floor},
+    FunctionDef{"ceil", 1, &apply_ceil}, FunctionDef{"round", 1, &apply_round},
 };
 
 }
