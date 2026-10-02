@@ -41,7 +41,7 @@ automatically, so a fresh clone needs nothing installed.
 ```sh
 cmake --preset default
 cmake --build build
-ctest --test-dir build          # 313 tests, no terminal required
+ctest --test-dir build          # 319 tests, no terminal required
 ./build/calc                    # scratch buffer
 ./build/calc notes.calc         # open a file
 ```
@@ -109,6 +109,8 @@ that entry point is only ever compiled by Emscripten.
 | `pow(a, b)` | power |
 | `sqrt(a)` | square root |
 | `fact(a)` | factorial, as a function |
+| `floor(a)` `ceil(a)` | round down, round up |
+| `round(a)` | round to the nearest whole number, halves away from zero |
 | `name = expr` | define a variable or constant |
 | `define f(x): expr` | define a function |
 | `define f(x) { … }` | the same, with a body of several statements |

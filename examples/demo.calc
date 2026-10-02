@@ -96,6 +96,12 @@ sum(1, 5, fact)
 -7 % 3
 7.5 % 2
 
+# floor, ceil and round snap to whole numbers. floor of a division is the
+# whole part of it, rounded down even for negative numbers.
+floor(-7 / 2)
+ceil(7 / 2)
+round(2.5)
+
 # Infinity is a value you can hold, in two spellings. Dividing by zero reaches
 # it, but a finite sum that overflows is still reported: infinity is something
 # you ask for, not something you fall into.
